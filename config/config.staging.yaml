@@ -1,0 +1,7 @@
+app_name: dfood
+env: staging
+port: 8081
+db:
+  driver: sqlite3
+  datasource: staging.db
+log_level: info

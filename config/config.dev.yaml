@@ -1,0 +1,7 @@
+app_name: dfood
+env: dev
+port: 8080
+db:
+  driver: sqlite3
+  datasource: dev.db
+log_level: debug

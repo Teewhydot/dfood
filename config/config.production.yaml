@@ -1,0 +1,7 @@
+app_name: dfood
+env: production
+port: 80
+db:
+  driver: sqlite3
+  datasource: prod.db
+log_level: warn
