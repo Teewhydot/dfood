@@ -11,11 +11,3 @@ type UserRepository interface {
 	EmailExists(email string) (bool, error)
 	UpdatePassword(email, hashedPassword string) error
 }
-
-type EventRepository interface {
-	Create(event *models.Event) error
-	GetAll() ([]models.Event, error)
-	GetByID(id string) (*models.Event, error)
-	Update(id string, event *models.Event) (*models.Event, error)
-	Delete(id string) error
-}
