@@ -20,7 +20,7 @@ func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	}
 }
 func (h *AuthHandler) UpdatePassword(c *gin.Context) {
-	var newPasswordJson models.UpdatePasswordModel
+	var newPasswordJson models.UpdatePasswordRequest
 	if err := c.ShouldBindJSON(&newPasswordJson); err != nil {
 		result := errors.HandleError(
 			func() (interface{}, error) {

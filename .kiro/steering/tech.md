@@ -10,7 +10,8 @@
 
 ## Key Dependencies
 - `github.com/gin-gonic/gin` - HTTP web framework
-- `github.com/mattn/go-sqlite3` - SQLite database driver
+- `gorm.io/gorm` - ORM library for database operations
+- `gorm.io/driver/sqlite` - GORM SQLite driver
 - `github.com/golang-jwt/jwt/v5` - JWT token handling
 - `gopkg.in/yaml.v3` - YAML configuration parsing
 - `github.com/go-playground/validator/v10` - Input validation

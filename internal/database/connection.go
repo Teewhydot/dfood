@@ -1,64 +1,52 @@
 package database
 
 import (
-	"database/sql"
 	"dfood/internal/config"
+	"dfood/internal/models"
 	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
 
 func InitDatabase(cfg *config.Config) error {
 	var err error
-	DB, err = sql.Open(cfg.DB.Driver, cfg.DB.Datasource)
+	DB, err = gorm.Open(sqlite.Open(cfg.DB.Datasource), &gorm.Config{})
 	if err != nil {
 		return fmt.Errorf("could not connect to database: %w", err)
 	}
 
-	if err = DB.Ping(); err != nil {
-		return fmt.Errorf("could not ping database: %w", err)
+	// Get underlying sql.DB to configure connection pool
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fmt.Errorf("could not get underlying sql.DB: %w", err)
 	}
 
-	DB.SetMaxOpenConns(10)
-	DB.SetMaxIdleConns(5)
+	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxIdleConns(5)
 
-	if err = createTables(); err != nil {
-		return fmt.Errorf("could not create tables: %w", err)
-	}
-
-	return nil
-}
-
-func createTables() error {
-	createUsersTable := `
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		first_name TEXT NOT NULL,
-		last_name TEXT,
-		email TEXT NOT NULL,
-		password TEXT NOT NULL
-	);
-	`
-	
-	createEventsTable := `
-	CREATE TABLE IF NOT EXISTS events (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		description TEXT,
-		start_time DATETIME NOT NULL,
-		end_time DATETIME NOT NULL,
-		user_id INTEGER NOT NULL
-	);
-	`
-
-	if _, err := DB.Exec(createUsersTable); err != nil {
-		return fmt.Errorf("could not create users table: %w", err)
-	}
-
-	if _, err := DB.Exec(createEventsTable); err != nil {
-		return fmt.Errorf("could not create events table: %w", err)
+	// Auto migrate the schema
+	if err = DB.AutoMigrate(
+		&models.User{},
+		&models.Address{},
+		&models.Permission{},
+		&models.Restaurant{},
+		&models.RestaurantFoodCategory{},
+		&models.Food{},
+		&models.Order{},
+		&models.PaymentMethod{},
+		&models.Card{},
+		&models.PaymentTransaction{},
+		&models.Chat{},
+		&models.Message{},
+		&models.Notification{},
+		&models.FavoriteFood{},
+		&models.FavoriteRestaurant{},
+		&models.RecentKeyword{},
+	); err != nil {
+		return fmt.Errorf("could not migrate database: %w", err)
 	}
 
 	return nil
@@ -66,7 +54,11 @@ func createTables() error {
 
 func CloseDB() error {
 	if DB != nil {
-		return DB.Close()
+		sqlDB, err := DB.DB()
+		if err != nil {
+			return err
+		}
+		return sqlDB.Close()
 	}
 	return nil
 }

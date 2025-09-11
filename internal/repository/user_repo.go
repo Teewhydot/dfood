@@ -1,36 +1,18 @@
 package repository
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
-	"strconv"
 
 	"dfood/internal/database"
 	"dfood/internal/models"
-	"dfood/pkg/errors"
+	pkgErrors "dfood/pkg/errors"
+
+	"gorm.io/gorm"
 )
 
 type userRepository struct {
-	db *sql.DB
-}
-
-// UpdatePassword implements UserRepository.
-func (r *userRepository) UpdatePassword(email string, hashedPassword string) error {
-	query := `
-			UPDATE users
-    		SET password = ?
-  			WHERE email = ?
-	`
-	stmt, err := r.db.Prepare(query)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to prepare update user statement", err)
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(hashedPassword, email)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to update user password", err)
-	}
-	return nil
+	db *gorm.DB
 }
 
 func NewUserRepository() UserRepository {
@@ -40,66 +22,49 @@ func NewUserRepository() UserRepository {
 }
 
 func (r *userRepository) Create(user *models.User) error {
-	query := `
-	INSERT INTO users (first_name, last_name, email, password, id)
-	VALUES (?, ?, ?, ?, ?);
-	`
-	stmt, err := r.db.Prepare(query)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to prepare save_user statement", err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(user.FirstName, user.LastName, user.Email, user.Password, user.Id)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to register user", err)
+	if err := r.db.Create(user).Error; err != nil {
+		return pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to register user", err)
 	}
 	return nil
 }
 
 func (r *userRepository) GetByEmail(email string) (*models.User, error) {
-	query := `SELECT id, first_name, last_name, email, password FROM users WHERE email = ?`
-
 	var user models.User
-	err := r.db.QueryRow(query, email).Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.Password)
+	err := r.db.Where("email = ?", email).First(&user).Error
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.NewHTTPError(http.StatusNotFound, "User not found", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, pkgErrors.NewHTTPError(http.StatusNotFound, "User not found", err)
 		}
-		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user by email", err)
+		return nil, pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user by email", err)
 	}
 	return &user, nil
 }
 
 func (r *userRepository) GetByID(id string) (*models.User, error) {
-	userIdInt, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return nil, errors.NewHTTPError(http.StatusBadRequest, "Invalid user ID format", err)
-	}
-
-	query := `SELECT id, first_name, last_name, email FROM users WHERE id = ?`
-
 	var user models.User
-	err = r.db.QueryRow(query, userIdInt).Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email)
+	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.NewHTTPError(http.StatusNotFound, "User not found", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, pkgErrors.NewHTTPError(http.StatusNotFound, "User not found", err)
 		}
-		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user details", err)
+		return nil, pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user details", err)
 	}
 	return &user, nil
 }
 
 func (r *userRepository) EmailExists(email string) (bool, error) {
-	query := `SELECT id FROM users WHERE email = ?`
-
-	var id int64
-	err := r.db.QueryRow(query, email).Scan(&id)
+	var count int64
+	err := r.db.Model(&models.User{}).Where("email = ?", email).Count(&count).Error
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil
-		}
-		return false, errors.NewHTTPError(http.StatusInternalServerError, "Failed to check if user exists", err)
+		return false, pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to check if user exists", err)
 	}
-	return true, nil
+	return count > 0, nil
+}
+
+func (r *userRepository) UpdatePassword(email, hashedPassword string) error {
+	err := r.db.Model(&models.User{}).Where("email = ?", email).Update("password", hashedPassword).Error
+	if err != nil {
+		return pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to update user password", err)
+	}
+	return nil
 }
