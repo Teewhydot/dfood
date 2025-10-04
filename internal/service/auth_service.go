@@ -2,6 +2,7 @@ package service
 
 import (
 	"net/http"
+	"time"
 
 	"dfood/internal/models"
 	"dfood/internal/repository"
@@ -13,6 +14,8 @@ type AuthService interface {
 	Register(user *models.User) error
 	Login(email, password string) (*models.User, error)
 	UpdatePassword(email, currentPassword, newPassword string) error
+	Logout(token string) error
+	DeleteAccount(email, token string) error
 }
 
 type authService struct {
@@ -66,12 +69,27 @@ func (s *authService) Register(user *models.User) error {
 		return errors.NewHTTPError(http.StatusConflict, "User already exists", nil)
 	}
 
+	// Generate ID if not provided
+	if user.ID == "" {
+		user.ID = utils.GenerateID()
+	}
+
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to secure password", err)
 	}
 
 	user.Password = hashedPassword
+
+	// Set default values
+	user.FirstTimeLogin = true
+	user.EmailVerified = false
+
+	// Set timestamps
+	now := time.Now()
+	user.CreatedAt = now
+	user.UpdatedAt = now
+
 	return s.userRepo.Create(user)
 }
 
@@ -99,4 +117,48 @@ func (s *authService) Login(email, password string) (*models.User, error) {
 	user.AccessToken = accessToken
 	user.RefreshToken = refreshToken
 	return user, nil
+}
+
+func (s *authService) Logout(token string) error {
+	// Validate token first
+	_, err := utils.ValidateToken(token)
+	if err != nil {
+		return errors.NewHTTPError(http.StatusUnauthorized, "Invalid token", err)
+	}
+
+	// Invalidate the token
+	err = utils.InvalidateToken(token)
+	if err != nil {
+		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to invalidate token", err)
+	}
+
+	return nil
+}
+
+func (s *authService) DeleteAccount(email, token string) error {
+	// Validate token first
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		return errors.NewHTTPError(http.StatusUnauthorized, "Invalid token", err)
+	}
+
+	// Check if token belongs to the user
+	if tokenEmail, ok := (*claims)["sub"].(string); !ok || tokenEmail != email {
+		return errors.NewHTTPError(http.StatusForbidden, "Token does not belong to this user", nil)
+	}
+
+	// Check if user exists
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		return errors.NewHTTPError(http.StatusNotFound, "User not found", err)
+	}
+
+	// Invalidate all tokens for this user
+	utils.InvalidateAllUserTokens(email)
+
+	// TODO: Delete user from database
+	// This would require implementing a Delete method in UserRepository
+	_ = user
+
+	return errors.NewHTTPError(http.StatusNotImplemented, "Account deletion not implemented", nil)
 }

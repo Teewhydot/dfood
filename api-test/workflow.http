@@ -1,0 +1,170 @@
+### Complete API Testing Workflow
+### This file demonstrates a typical user journey through the API
+
+### Step 1: Register a new user
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "id": "test-user-001",
+  "first_name": "Test",
+  "last_name": "User",
+  "email": "testuser@example.com",
+  "phone_number": "+1234567890",
+  "password": "testpassword123"
+}
+
+###
+
+### Step 2: Login with the registered user
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "testpassword123"
+}
+
+# Copy the access_token from the response and use it in subsequent requests
+
+###
+
+### Step 3: Get user profile
+GET http://localhost:8080/api/v1/users/test-user-001
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Step 4: Update user profile
+PUT http://localhost:8080/api/v1/users/test-user-001
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "first_name": "Updated Test",
+  "bio": "This is my updated bio"
+}
+
+###
+
+### Step 5: Add an address
+POST http://localhost:8080/api/v1/users/test-user-001/addresses
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "id": "addr-001",
+  "user_id": "test-user-001",
+  "street": "123 Test Street",
+  "city": "Test City",
+  "state": "TS",
+  "zip_code": "12345",
+  "type": "home",
+  "address": "123 Test Street, Apt 1",
+  "apartment": "Apt 1",
+  "title": "Home",
+  "is_default": true
+}
+
+###
+
+### Step 6: Get all restaurants
+GET http://localhost:8080/api/v1/restaurants?limit=10
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Step 7: Search for foods
+GET http://localhost:8080/api/v1/foods/search?query=pizza&limit=5
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Step 8: Add a food to favorites (use actual food ID from search results)
+POST http://localhost:8080/api/v1/users/test-user-001/favorites/foods/FOOD_ID_FROM_SEARCH
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Step 9: Get favorite foods
+GET http://localhost:8080/api/v1/users/test-user-001/favorites/foods
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Step 10: Create an order (use actual restaurant and food IDs)
+POST http://localhost:8080/api/v1/orders
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "id": "order-001",
+  "user_id": "test-user-001",
+  "restaurant_id": "RESTAURANT_ID_FROM_SEARCH",
+  "items": [
+    {
+      "food_id": "FOOD_ID_FROM_SEARCH",
+      "quantity": 2
+    }
+  ],
+  "delivery_address": "123 Test Street, Apt 1, Test City, TS 12345",
+  "payment_method": "credit_card"
+}
+
+###
+
+### Step 11: Get user orders
+GET http://localhost:8080/api/v1/orders/user/test-user-001
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Step 12: Update FCM token
+POST http://localhost:8080/api/v1/users/test-user-001/fcm-token
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "fcm_token": "sample_fcm_token_string"
+}
+
+###
+
+### Step 13: Send a notification
+POST http://localhost:8080/api/v1/notifications
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "id": "notif-001",
+  "user_id": "test-user-001",
+  "title": "Welcome!",
+  "body": "Welcome to our food delivery app!",
+  "type": "system"
+}
+
+###
+
+### Step 14: Get notifications
+GET http://localhost:8080/api/v1/users/test-user-001/notifications
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Step 15: Update password
+POST http://localhost:8080/api/v1/auth/password/update
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "current_password": "testpassword123",
+  "new_password": "newtestpassword456"
+}
+
+###
+
+### Step 16: Logout
+POST http://localhost:8080/api/v1/auth/logout
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###

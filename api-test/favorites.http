@@ -1,0 +1,85 @@
+### Favorites Management Endpoints
+
+### Get Favorite Foods
+GET http://localhost:8080/api/v1/users/user-123/favorites/foods
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Favorite Restaurants
+GET http://localhost:8080/api/v1/users/user-123/favorites/restaurants
+Authorization: Bearer {{access_token}}
+
+###
+
+### Add Favorite Food
+POST http://localhost:8080/api/v1/users/user-123/favorites/foods/food-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Remove Favorite Food
+DELETE http://localhost:8080/api/v1/users/user-123/favorites/foods/food-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Add Favorite Restaurant
+POST http://localhost:8080/api/v1/users/user-123/favorites/restaurants/restaurant-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Remove Favorite Restaurant
+DELETE http://localhost:8080/api/v1/users/user-123/favorites/restaurants/restaurant-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Check Food Favorite Status
+GET http://localhost:8080/api/v1/users/user-123/favorites/foods/food-123/status
+Authorization: Bearer {{access_token}}
+
+###
+
+### Check Restaurant Favorite Status
+GET http://localhost:8080/api/v1/users/user-123/favorites/restaurants/restaurant-123/status
+Authorization: Bearer {{access_token}}
+
+###
+
+### Toggle Food Favorite
+POST http://localhost:8080/api/v1/users/user-123/favorites/foods/food-123/toggle
+Authorization: Bearer {{access_token}}
+
+###
+
+### Toggle Restaurant Favorite
+POST http://localhost:8080/api/v1/users/user-123/favorites/restaurants/restaurant-123/toggle
+Authorization: Bearer {{access_token}}
+
+###
+
+### Clear All Favorites
+DELETE http://localhost:8080/api/v1/users/user-123/favorites
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Favorites Stats
+GET http://localhost:8080/api/v1/users/user-123/favorites/stats
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Favorite Foods Stream (Not Implemented - WebSocket)
+GET http://localhost:8080/api/v1/users/user-123/favorites/foods/stream
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Favorite Restaurants Stream (Not Implemented - WebSocket)
+GET http://localhost:8080/api/v1/users/user-123/favorites/restaurants/stream
+Authorization: Bearer {{access_token}}
+
+###

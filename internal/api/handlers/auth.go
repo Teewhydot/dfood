@@ -97,3 +97,34 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	)
 	result.RespondWithJSON(c)
 }
+
+// Additional Authentication Endpoints
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// TODO: Implement user logout
+	c.JSON(200, gin.H{"message": "User logout - TODO"})
+}
+
+func (h *AuthHandler) DeleteAccount(c *gin.Context) {
+	// TODO: Implement delete user account and associated data
+	c.JSON(200, gin.H{"message": "Delete account - TODO"})
+}
+
+func (h *AuthHandler) SendPasswordReset(c *gin.Context) {
+	// TODO: Implement send password reset email
+	c.JSON(200, gin.H{"message": "Send password reset - TODO"})
+}
+
+func (h *AuthHandler) SendEmailVerification(c *gin.Context) {
+	// TODO: Implement send email verification
+	c.JSON(200, gin.H{"message": "Send email verification - TODO"})
+}
+
+func (h *AuthHandler) VerifyEmailStatus(c *gin.Context) {
+	// TODO: Implement check email verification status
+	c.JSON(200, gin.H{"message": "Verify email status - TODO"})
+}
+
+func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
+	// TODO: Implement get current authenticated user info
+	c.JSON(200, gin.H{"message": "Get current user - TODO"})
+}

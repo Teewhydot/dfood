@@ -68,3 +68,27 @@ func (r *userRepository) UpdatePassword(email, hashedPassword string) error {
 	}
 	return nil
 }
+
+func (r *userRepository) Update(id string, updates map[string]interface{}) error {
+	err := r.db.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
+	if err != nil {
+		return pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to update user", err)
+	}
+	return nil
+}
+
+func (r *userRepository) UpdateField(id, field string, value interface{}) error {
+	err := r.db.Model(&models.User{}).Where("id = ?", id).Update(field, value).Error
+	if err != nil {
+		return pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to update user field", err)
+	}
+	return nil
+}
+
+func (r *userRepository) UpdateFCMToken(id, token string) error {
+	err := r.db.Model(&models.User{}).Where("id = ?", id).Update("fcm_token", token).Error
+	if err != nil {
+		return pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to update FCM token", err)
+	}
+	return nil
+}

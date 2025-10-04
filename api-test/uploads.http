@@ -1,0 +1,40 @@
+### File Upload Endpoints (Not Implemented - File Storage)
+
+### Upload Profile Image
+POST http://localhost:8080/api/v1/upload/profile-image
+Content-Type: multipart/form-data
+Authorization: Bearer {{access_token}}
+
+# Note: This would require actual file upload in a real implementation
+# Content-Disposition: form-data; name="image"; filename="profile.jpg"
+# Content-Type: image/jpeg
+
+###
+
+### Upload Food Image
+POST http://localhost:8080/api/v1/upload/food-image
+Content-Type: multipart/form-data
+Authorization: Bearer {{access_token}}
+
+# Note: This would require actual file upload in a real implementation
+# Content-Disposition: form-data; name="image"; filename="food.jpg"
+# Content-Type: image/jpeg
+
+###
+
+### Upload Restaurant Image
+POST http://localhost:8080/api/v1/upload/restaurant-image
+Content-Type: multipart/form-data
+Authorization: Bearer {{access_token}}
+
+# Note: This would require actual file upload in a real implementation
+# Content-Disposition: form-data; name="image"; filename="restaurant.jpg"
+# Content-Type: image/jpeg
+
+###
+
+### Delete Image
+DELETE http://localhost:8080/api/v1/upload/image-123
+Authorization: Bearer {{access_token}}
+
+###

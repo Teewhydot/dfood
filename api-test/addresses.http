@@ -1,0 +1,67 @@
+### Address Management Endpoints
+
+### Get User Addresses
+GET http://localhost:8080/api/v1/users/user-123/addresses
+Authorization: Bearer {{access_token}}
+
+###
+
+### Save New Address
+POST http://localhost:8080/api/v1/users/user-123/addresses
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "id": "addr-123",
+  "user_id": "user-123",
+  "street": "123 Main St",
+  "city": "New York",
+  "state": "NY",
+  "zip_code": "10001",
+  "type": "home",
+  "address": "123 Main St, Apt 4B",
+  "apartment": "Apt 4B",
+  "title": "Home Address",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "is_default": true
+}
+
+###
+
+### Update Address
+PUT http://localhost:8080/api/v1/users/user-123/addresses/addr-123
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "street": "456 Oak Ave",
+  "apartment": "Suite 2A",
+  "title": "Updated Home Address"
+}
+
+###
+
+### Delete Address
+DELETE http://localhost:8080/api/v1/users/user-123/addresses/addr-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Default Address
+GET http://localhost:8080/api/v1/users/user-123/addresses/default
+Authorization: Bearer {{access_token}}
+
+###
+
+### Set Default Address
+PUT http://localhost:8080/api/v1/users/user-123/addresses/addr-123/set-default
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Address Stream (Not Implemented - WebSocket)
+GET http://localhost:8080/api/v1/users/user-123/addresses/stream
+Authorization: Bearer {{access_token}}
+
+###

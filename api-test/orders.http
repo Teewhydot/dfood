@@ -1,0 +1,65 @@
+### Order Management Endpoints
+
+### Create Order
+POST http://localhost:8080/api/v1/orders
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "id": "order-123",
+  "user_id": "user-123",
+  "restaurant_id": "restaurant-123",
+  "items": [
+    {
+      "food_id": "food-123",
+      "quantity": 2,
+      "special_instructions": "Extra cheese"
+    },
+    {
+      "food_id": "food-456",
+      "quantity": 1,
+      "special_instructions": "No onions"
+    }
+  ],
+  "delivery_address": "123 Main St, Apt 4B, New York, NY 10001",
+  "payment_method": "credit_card",
+  "delivery_fee": 3.99,
+  "tax": 2.50
+}
+
+###
+
+### Get User Orders
+GET http://localhost:8080/api/v1/orders/user/user-123?limit=20&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Order by ID
+GET http://localhost:8080/api/v1/orders/order-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Update Order Status
+PUT http://localhost:8080/api/v1/orders/order-123/status
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "status": "confirmed"
+}
+
+###
+
+### Cancel Order
+DELETE http://localhost:8080/api/v1/orders/order-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Track Order
+GET http://localhost:8080/api/v1/orders/order-123/track
+Authorization: Bearer {{access_token}}
+
+###

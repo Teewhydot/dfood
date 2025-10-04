@@ -1,0 +1,43 @@
+### Restaurant Endpoints
+
+### Get All Restaurants
+GET http://localhost:8080/api/v1/restaurants?limit=20&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Restaurant by ID
+GET http://localhost:8080/api/v1/restaurants/restaurant-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Popular Restaurants
+GET http://localhost:8080/api/v1/restaurants/popular?limit=10
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Nearby Restaurants
+GET http://localhost:8080/api/v1/restaurants/nearby?latitude=40.7128&longitude=-74.0060&radius=5&limit=20
+Authorization: Bearer {{access_token}}
+
+###
+
+### Search Restaurants
+GET http://localhost:8080/api/v1/restaurants/search?query=pizza&limit=20&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Restaurants by Category
+GET http://localhost:8080/api/v1/restaurants/category/italian?limit=20&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Restaurant Menu
+GET http://localhost:8080/api/v1/restaurants/restaurant-123/menu?limit=50&offset=0
+Authorization: Bearer {{access_token}}
+
+###

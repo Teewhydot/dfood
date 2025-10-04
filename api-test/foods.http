@@ -1,0 +1,43 @@
+### Food/Menu Endpoints
+
+### Get All Foods
+GET http://localhost:8080/api/v1/foods?limit=20&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Food by ID
+GET http://localhost:8080/api/v1/foods/food-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Popular Foods
+GET http://localhost:8080/api/v1/foods/popular?limit=10
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Recommended Foods
+GET http://localhost:8080/api/v1/foods/recommended?limit=10
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Foods by Category
+GET http://localhost:8080/api/v1/foods/category/pizza?limit=20&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Foods by Restaurant
+GET http://localhost:8080/api/v1/foods/restaurant/restaurant-123?limit=50&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Search Foods
+GET http://localhost:8080/api/v1/foods/search?query=margherita&limit=20&offset=0
+Authorization: Bearer {{access_token}}
+
+###

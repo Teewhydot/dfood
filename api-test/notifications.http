@@ -1,0 +1,58 @@
+### Notification Management Endpoints
+
+### Get User Notifications
+GET http://localhost:8080/api/v1/users/user-123/notifications?limit=50&offset=0
+Authorization: Bearer {{access_token}}
+
+###
+
+### Send Notification
+POST http://localhost:8080/api/v1/notifications
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "id": "notif-123",
+  "user_id": "user-123",
+  "title": "Order Update",
+  "body": "Your order has been confirmed!",
+  "type": "order",
+  "data": "{\"order_id\": \"order-123\"}"
+}
+
+###
+
+### Mark Notification as Read
+PUT http://localhost:8080/api/v1/notifications/notif-123/read
+Authorization: Bearer {{access_token}}
+
+###
+
+### Delete Notification
+DELETE http://localhost:8080/api/v1/notifications/notif-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get Notifications Stream (Not Implemented - WebSocket)
+GET http://localhost:8080/api/v1/users/user-123/notifications/stream
+Authorization: Bearer {{access_token}}
+
+###
+
+### Send Push Notification (Not Implemented - FCM)
+POST http://localhost:8080/api/v1/push-notifications/send
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "user_id": "user-123",
+  "title": "New Promotion!",
+  "body": "Get 20% off your next order",
+  "data": {
+    "promotion_id": "promo-123",
+    "discount": "20%"
+  }
+}
+
+###

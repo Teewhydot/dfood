@@ -1,0 +1,73 @@
+### Payment Endpoints (Not Implemented - External Service)
+
+### Get Payment Methods
+GET http://localhost:8080/api/v1/payments/methods
+Authorization: Bearer {{access_token}}
+
+###
+
+### Get User Cards
+GET http://localhost:8080/api/v1/payments/cards/user-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Save Card
+POST http://localhost:8080/api/v1/payments/cards
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "id": "card-123",
+  "user_id": "user-123",
+  "payment_method_id": "pm-123",
+  "pan": "4111111111111111",
+  "cvv": "123",
+  "expiry_month": 12,
+  "expiry_year": 2025,
+  "cardholder_name": "John Doe",
+  "is_default": true
+}
+
+###
+
+### Delete Card
+DELETE http://localhost:8080/api/v1/payments/cards/card-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Process Payment
+POST http://localhost:8080/api/v1/payments/process
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "id": "txn-123",
+  "order_id": "order-123",
+  "user_id": "user-123",
+  "payment_method_id": "pm-123",
+  "amount": 25.99,
+  "currency": "USD"
+}
+
+###
+
+### Get Transaction Details
+GET http://localhost:8080/api/v1/payments/transaction/txn-123
+Authorization: Bearer {{access_token}}
+
+###
+
+### Process Refund
+POST http://localhost:8080/api/v1/payments/refund
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "transaction_id": "txn-123",
+  "amount": 25.99,
+  "reason": "Customer request"
+}
+
+###
