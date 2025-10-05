@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -43,8 +44,9 @@ func (s *emailService) SendEmail(toEmail, toName, subject, plainTextContent, htm
 	to := mail.NewEmail(toName, toEmail)
 
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 
-	response, err := s.client.Send(message)
+	response, err := client.Send(message)
 	if err != nil {
 		log.Println(err)
 		return fmt.Errorf("failed to send email: %w", err)
