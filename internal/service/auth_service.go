@@ -19,12 +19,14 @@ type AuthService interface {
 }
 
 type authService struct {
-	userRepo repository.UserRepository
+	userRepo     repository.UserRepository
+	emailService EmailService
 }
 
-func NewAuthService(userRepo repository.UserRepository) AuthService {
+func NewAuthService(userRepo repository.UserRepository, emailService EmailService) AuthService {
 	return &authService{
-		userRepo: userRepo,
+		userRepo:     userRepo,
+		emailService: emailService,
 	}
 }
 
@@ -90,7 +92,59 @@ func (s *authService) Register(user *models.User) error {
 	user.CreatedAt = now
 	user.UpdatedAt = now
 
-	return s.userRepo.Create(user)
+	err = s.userRepo.Create(user)
+	if err != nil {
+		return err
+	}
+
+	// Send welcome email (don't fail registration if email fails)
+	if s.emailService != nil {
+		go func() {
+			subject := "Welcome to dfood!"
+			plainText := `Hi ` + user.FirstName + `,
+
+Welcome to dfood! We're excited to have you join our community of food lovers.
+
+You can now:
+- Discover amazing restaurants
+- Share your dining experiences through reviews
+- Help others find great places to eat
+
+Start exploring and sharing your food journey with us!
+
+Best regards,
+The dfood Team`
+
+			htmlContent := `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to dfood</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2c3e50;">Welcome to dfood!</h1>
+        <p>Hi ` + user.FirstName + `,</p>
+        <p>Welcome to dfood! We're excited to have you join our community of food lovers.</p>
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">You can now:</h3>
+            <ul>
+                <li>Discover amazing restaurants</li>
+                <li>Share your dining experiences through reviews</li>
+                <li>Help others find great places to eat</li>
+            </ul>
+        </div>
+        <p>Start exploring and sharing your food journey with us!</p>
+        <p>Best regards,<br>The dfood Team</p>
+    </div>
+</body>
+</html>`
+
+			_ = s.emailService.SendEmail(user.Email, user.FirstName, subject, plainText, htmlContent)
+		}()
+	}
+
+	return nil
 }
 
 func (s *authService) Login(email, password string) (*models.User, error) {

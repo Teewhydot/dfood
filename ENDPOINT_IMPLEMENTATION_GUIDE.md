@@ -42,8 +42,8 @@ type Review struct {
 	UpdatedAt    time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// Relationships
-	User       User       `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Restaurant Restaurant `json:"restaurant,omitempty" gorm:"foreignKey:RestaurantID"`
+	User       User       `json:"user" gorm:"foreignKey:UserID"`
+	Restaurant Restaurant `json:"restaurant" gorm:"foreignKey:RestaurantID"`
 }
 
 // Table name

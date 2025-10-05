@@ -5,3 +5,7 @@ db:
   driver: sqlite3
   datasource: prod.db
 log_level: warn
+sendgrid:
+  api_key: ${SENDGRID_API_KEY}
+  from_email: noreply@dfood.com
+  from_name: dfood

@@ -43,7 +43,12 @@ func main() {
 	notificationRepo := repository.NewNotificationRepository()
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo)
+	emailService := service.NewEmailService(service.EmailConfig{
+		APIKey:    cfg.SendGrid.APIKey,
+		FromEmail: cfg.SendGrid.FromEmail,
+		FromName:  cfg.SendGrid.FromName,
+	})
+	authService := service.NewAuthService(userRepo, emailService)
 	userService := service.NewUserService(userRepo)
 	restaurantService := service.NewRestaurantService(restaurantRepo, foodRepo)
 	foodService := service.NewFoodService(foodRepo)

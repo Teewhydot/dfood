@@ -5,3 +5,7 @@ db:
   driver: sqlite3
   datasource: staging.db
 log_level: info
+sendgrid:
+  api_key: ${SENDGRID_API_KEY}
+  from_email: noreply@dfood-staging.com
+  from_name: dfood Staging
