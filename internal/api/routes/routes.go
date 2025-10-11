@@ -55,12 +55,14 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/logout", authHandler.Logout)
-			auth.DELETE("/delete-account", authHandler.DeleteAccount)
+			auth.DELETE("/account", authHandler.DeleteAccount)
 
-			// Email Management
-			auth.POST("/send-password-reset", authHandler.SendPasswordReset)
-			auth.GET("/current-user", authHandler.GetCurrentUser)
-			auth.POST("/password/update", authHandler.UpdatePassword)
+			// Password Management
+			auth.POST("/forgot-password", authHandler.SendPasswordReset)
+			auth.PUT("/password", authHandler.UpdatePassword)
+
+			// User Info
+			auth.GET("/me", authHandler.GetCurrentUser)
 		}
 
 		// 2. User Profile Endpoints
@@ -100,7 +102,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			users.GET("/:userId/favorites/foods/stream", favoritesHandler.GetFavoriteFoodsStream)
 			users.GET("/:userId/favorites/restaurants/stream", favoritesHandler.GetFavoriteRestaurantsStream)
 
-		
 			// User Notifications
 			users.GET("/:userId/notifications", notificationHandler.GetUserNotifications)
 			users.GET("/:userId/notifications/stream", notificationHandler.GetNotificationsStream)
@@ -161,7 +162,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			payments.POST("/refund", paymentHandler.ProcessRefund)
 		}
 
-	
 		// 8. Notification Endpoints
 		notifications := v1.Group("/notifications")
 		{

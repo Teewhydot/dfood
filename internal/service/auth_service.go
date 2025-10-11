@@ -16,6 +16,7 @@ type AuthService interface {
 	UpdatePassword(email, currentPassword, newPassword string) error
 	Logout(token string) error
 	DeleteAccount(email, token string) error
+	GetCurrentUser(token string) (*models.User, error)
 }
 
 type authService struct {
@@ -215,4 +216,29 @@ func (s *authService) DeleteAccount(email, token string) error {
 	_ = user
 
 	return errors.NewHTTPError(http.StatusNotImplemented, "Account deletion not implemented", nil)
+}
+
+func (s *authService) GetCurrentUser(token string) (*models.User, error) {
+	// Validate token first
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusUnauthorized, "Invalid token", err)
+	}
+
+	// Extract email from token
+	email, ok := (*claims)["sub"].(string)
+	if !ok {
+		return nil, errors.NewHTTPError(http.StatusUnauthorized, "Invalid token claims", nil)
+	}
+
+	// Get user from database
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusNotFound, "User not found", err)
+	}
+
+	// Clear sensitive information
+	user.Password = ""
+
+	return user, nil
 }
