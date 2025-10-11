@@ -23,11 +23,43 @@ func GenerateJwtToken(email string, isRefresh bool) (string, error) {
 		expirationTime = time.Now().Add(15 * time.Minute)
 	}
 	claims := &jwt.MapClaims{
-		"sub": email,
-		"exp": expirationTime.Unix(),
+		"sub":        email,
+		"exp":        expirationTime.Unix(),
+		"is_refresh": isRefresh,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtKey)
+}
+
+// GenerateVerificationToken generates a token for email verification or password reset
+func GenerateVerificationToken(email string, duration time.Duration) (string, error) {
+	expirationTime := time.Now().Add(duration)
+	claims := &jwt.MapClaims{
+		"sub":  email,
+		"exp":  expirationTime.Unix(),
+		"type": "verification",
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtKey)
+}
+
+// ValidateVerificationToken validates verification tokens (email verification, password reset)
+func ValidateVerificationToken(tokenStr string) (*jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*jwt.MapClaims); ok && token.Valid {
+		// Check if it's a verification token
+		if tokenType, exists := (*claims)["type"]; !exists || tokenType != "verification" {
+			return nil, jwt.ErrTokenInvalidClaims
+		}
+		return claims, nil
+	}
+	return nil, jwt.ErrTokenSignatureInvalid
 }
 
 func ValidateToken(tokenStr string) (*jwt.MapClaims, error) {

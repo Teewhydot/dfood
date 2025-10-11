@@ -57,9 +57,16 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			auth.POST("/logout", authHandler.Logout)
 			auth.DELETE("/account", authHandler.DeleteAccount)
 
+			// Token Management
+			auth.POST("/refresh-token", authHandler.RefreshToken)
+
 			// Password Management
 			auth.POST("/forgot-password", authHandler.SendPasswordReset)
 			auth.PUT("/password", authHandler.UpdatePassword)
+
+			// Email Verification
+			auth.POST("/send-email-verification", authHandler.SendEmailVerification)
+			auth.GET("/verify-email", authHandler.VerifyEmail)
 
 			// User Info
 			auth.GET("/me", authHandler.GetCurrentUser)

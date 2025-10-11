@@ -18,7 +18,14 @@ type VerifyOtpRequest struct {
 	Otp   string `json:"otp" validate:"required"`
 }
 
-type ResetPasswordRequest struct {
-	Email       string `json:"email" validate:"required,email"`
-	NewPassword string `json:"new_password" validate:"required"`
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type EmailVerificationRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type VerifyEmailRequest struct {
+	Token string `json:"token" binding:"required"`
 }

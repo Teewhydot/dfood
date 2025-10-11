@@ -173,11 +173,12 @@ func (h *AuthHandler) SendPasswordReset(c *gin.Context) {
 
 	result := errors.HandleError(
 		func() (interface{}, error) {
-			// For now, we'll return success without actually implementing the full flow
-			// In a real implementation, you'd generate a reset token and send email
+			err := h.authService.SendPasswordReset(resetRequest.Email)
+			if err != nil {
+				return nil, err
+			}
 			return gin.H{
 				"message": "If an account with that email exists, a password reset link has been sent",
-				"email":   resetRequest.Email,
 			}, nil
 		},
 		"sending password reset email",
@@ -214,6 +215,83 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 			return user, nil
 		},
 		"getting current user",
+	)
+	result.RespondWithJSON(c)
+}
+func (h *AuthHandler) RefreshToken(c *gin.Context) {
+	var refreshRequest models.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&refreshRequest); err != nil {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusBadRequest, "Invalid JSON payload", err)
+			},
+			"binding JSON for refresh token",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			user, err := h.authService.RefreshToken(refreshRequest.RefreshToken)
+			if err != nil {
+				return nil, err
+			}
+			return user, nil
+		},
+		"refreshing token",
+	)
+	result.RespondWithJSON(c)
+}
+
+func (h *AuthHandler) SendEmailVerification(c *gin.Context) {
+	var verificationRequest models.EmailVerificationRequest
+	if err := c.ShouldBindJSON(&verificationRequest); err != nil {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusBadRequest, "Invalid JSON payload", err)
+			},
+			"binding JSON for email verification",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			err := h.authService.SendEmailVerification(verificationRequest.Email)
+			if err != nil {
+				return nil, err
+			}
+			return gin.H{"message": "Verification email sent successfully"}, nil
+		},
+		"sending email verification",
+	)
+	result.RespondWithJSON(c)
+}
+
+func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusBadRequest, "Verification token is required", nil)
+			},
+			"getting verification token from query",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			err := h.authService.VerifyEmail(token)
+			if err != nil {
+				return nil, err
+			}
+			return gin.H{"message": "Email verified successfully"}, nil
+		},
+		"verifying email",
 	)
 	result.RespondWithJSON(c)
 }
