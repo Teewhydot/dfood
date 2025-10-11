@@ -3,19 +3,21 @@ package service
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"dfood/internal/models"
 	"dfood/internal/repository"
+	"dfood/internal/utils"
 	"dfood/pkg/errors"
 )
 
 type OrderService interface {
-	CreateOrder(order *models.Order) (*models.Order, error)
+	CreateOrder(userID string, orderRequest *models.CreateOrderRequest) (*models.Order, error)
 	GetUserOrders(userID string, limit, offset int) ([]models.Order, error)
-	GetOrderByID(orderID string) (*models.Order, error)
-	UpdateOrderStatus(orderID string, status models.OrderStatus) error
+	GetByID(orderID string) (*models.Order, error)
+	UpdateStatus(orderID string, status models.OrderStatus) error
 	CancelOrder(orderID string) error
-	TrackOrder(orderID string) (*models.Order, error)
+	TrackOrder(orderID string) (interface{}, error)
 }
 
 type orderService struct {
@@ -34,15 +36,50 @@ func NewOrderService(orderRepo repository.OrderRepository, userRepo repository.U
 	}
 }
 
-func (s *orderService) CreateOrder(order *models.Order) (*models.Order, error) {
-	if order == nil {
-		return nil, errors.NewHTTPError(http.StatusBadRequest, "Order is required", nil)
+func (s *orderService) CreateOrder(userID string, orderRequest *models.CreateOrderRequest) (*models.Order, error) {
+	if orderRequest == nil {
+		return nil, errors.NewHTTPError(http.StatusBadRequest, "Order request is required", nil)
+	}
+
+	// Validate user ID
+	if strings.TrimSpace(userID) == "" {
+		return nil, errors.NewHTTPError(http.StatusBadRequest, "User ID is required", nil)
+	}
+
+	// Validate user exists
+	_, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create order from request
+	order := &models.Order{
+		UserID:          userID,
+		RestaurantID:    orderRequest.RestaurantID,
+		RestaurantName:  orderRequest.RestaurantName,
+		Items:           make(models.OrderItemsArray, len(orderRequest.Items)),
+		Subtotal:        orderRequest.Subtotal,
+		DeliveryFee:     orderRequest.DeliveryFee,
+		Tax:             orderRequest.Tax,
+		Total:           orderRequest.Total,
+		DeliveryAddress: orderRequest.DeliveryAddress,
+		PaymentMethod:   orderRequest.PaymentMethodID, // Map PaymentMethodID to PaymentMethod
+		Notes:           orderRequest.Notes,
+	}
+
+	// Copy items from request
+	for i, item := range orderRequest.Items {
+		order.Items[i] = models.OrderItem{
+			FoodID:              item.FoodID,
+			FoodName:            item.Name,
+			Price:               item.Price,
+			Quantity:            item.Quantity,
+			Total:               item.Price * float64(item.Quantity),
+			SpecialInstructions: item.SpecialInstructions,
+		}
 	}
 
 	// Validate required fields
-	if strings.TrimSpace(order.UserID) == "" {
-		return nil, errors.NewHTTPError(http.StatusBadRequest, "User ID is required", nil)
-	}
 	if strings.TrimSpace(order.RestaurantID) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Restaurant ID is required", nil)
 	}
@@ -54,12 +91,6 @@ func (s *orderService) CreateOrder(order *models.Order) (*models.Order, error) {
 	}
 	if strings.TrimSpace(order.PaymentMethod) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Payment method is required", nil)
-	}
-
-	// Validate user exists
-	_, err := s.userRepo.GetByID(order.UserID)
-	if err != nil {
-		return nil, err
 	}
 
 	// Validate restaurant exists
@@ -84,9 +115,6 @@ func (s *orderService) CreateOrder(order *models.Order) (*models.Order, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !food.IsAvailable {
-			return nil, errors.NewHTTPError(http.StatusBadRequest, "Food item is not available: "+food.Name, nil)
-		}
 		if food.RestaurantID != order.RestaurantID {
 			return nil, errors.NewHTTPError(http.StatusBadRequest, "All items must be from the same restaurant", nil)
 		}
@@ -98,16 +126,21 @@ func (s *orderService) CreateOrder(order *models.Order) (*models.Order, error) {
 		subtotal += order.Items[i].Total
 	}
 
-	// Set order totals
+	// Set calculated totals
 	order.Subtotal = subtotal
-	if order.DeliveryFee < 0 {
-		order.DeliveryFee = restaurant.DeliveryFee
+	if order.DeliveryFee <= 0 {
+		order.DeliveryFee = 3.99 // Default delivery fee
 	}
 	if order.Tax <= 0 {
 		order.Tax = subtotal * 0.08 // 8% tax rate
 	}
 	order.Total = order.Subtotal + order.DeliveryFee + order.Tax
 	order.Status = models.OrderStatusPending
+
+	// Generate order ID and set timestamps
+	order.ID = utils.GenerateOrderID()
+	order.CreatedAt = time.Now()
+	order.UpdatedAt = time.Now()
 
 	// Create order
 	err = s.orderRepo.Create(order)
@@ -142,7 +175,7 @@ func (s *orderService) GetUserOrders(userID string, limit, offset int) ([]models
 	return s.orderRepo.GetByUserID(userID, limit, offset)
 }
 
-func (s *orderService) GetOrderByID(orderID string) (*models.Order, error) {
+func (s *orderService) GetByID(orderID string) (*models.Order, error) {
 	if strings.TrimSpace(orderID) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Order ID is required", nil)
 	}
@@ -150,7 +183,7 @@ func (s *orderService) GetOrderByID(orderID string) (*models.Order, error) {
 	return s.orderRepo.GetByID(orderID)
 }
 
-func (s *orderService) UpdateOrderStatus(orderID string, status models.OrderStatus) error {
+func (s *orderService) UpdateStatus(orderID string, status models.OrderStatus) error {
 	if strings.TrimSpace(orderID) == "" {
 		return errors.NewHTTPError(http.StatusBadRequest, "Order ID is required", nil)
 	}
@@ -204,7 +237,7 @@ func (s *orderService) CancelOrder(orderID string) error {
 	return s.orderRepo.UpdateStatus(orderID, models.OrderStatusCancelled)
 }
 
-func (s *orderService) TrackOrder(orderID string) (*models.Order, error) {
+func (s *orderService) TrackOrder(orderID string) (interface{}, error) {
 	if strings.TrimSpace(orderID) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Order ID is required", nil)
 	}

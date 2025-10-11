@@ -10,9 +10,9 @@ import (
 )
 
 type UserService interface {
-	GetProfile(userID string) (*models.User, error)
-	UpdateProfile(userID string, updates map[string]interface{}) error
-	UpdateProfileField(userID, field string, value interface{}) error
+	GetByID(userID string) (*models.User, error)
+	Update(userID string, updates map[string]interface{}) error
+	UpdateField(userID, field string, value interface{}) error
 	UploadProfileImage(userID, imageURL string) error
 	DeleteProfileImage(userID string) error
 	SyncProfile(userID string) error
@@ -30,7 +30,7 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 	}
 }
 
-func (s *userService) GetProfile(userID string) (*models.User, error) {
+func (s *userService) GetByID(userID string) (*models.User, error) {
 	if strings.TrimSpace(userID) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "User ID is required", nil)
 	}
@@ -45,7 +45,7 @@ func (s *userService) GetProfile(userID string) (*models.User, error) {
 	return user, nil
 }
 
-func (s *userService) UpdateProfile(userID string, updates map[string]interface{}) error {
+func (s *userService) Update(userID string, updates map[string]interface{}) error {
 	if strings.TrimSpace(userID) == "" {
 		return errors.NewHTTPError(http.StatusBadRequest, "User ID is required", nil)
 	}
@@ -82,7 +82,7 @@ func (s *userService) UpdateProfile(userID string, updates map[string]interface{
 	return s.userRepo.Update(userID, updates)
 }
 
-func (s *userService) UpdateProfileField(userID, field string, value interface{}) error {
+func (s *userService) UpdateField(userID, field string, value interface{}) error {
 	if strings.TrimSpace(userID) == "" {
 		return errors.NewHTTPError(http.StatusBadRequest, "User ID is required", nil)
 	}

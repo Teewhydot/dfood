@@ -12,22 +12,6 @@ type PaymentMethod struct {
 	IconURL string `json:"icon_url" gorm:"column:icon_url;not null"`
 }
 
-// Card represents payment card entity
-type Card struct {
-	ID              string        `json:"id" gorm:"primaryKey;column:id"`
-	UserID          string        `json:"user_id" gorm:"column:user_id;not null;index"`
-	PaymentMethodID string        `json:"payment_method_id" gorm:"column:payment_method_id;not null"`
-	PAN             string        `json:"pan" gorm:"column:pan;not null"` // Should be encrypted
-	CVV             string        `json:"cvv" gorm:"column:cvv;not null"` // Should be encrypted
-	ExpiryMonth     int           `json:"expiry_month" gorm:"column:expiry_month;not null"`
-	ExpiryYear      int           `json:"expiry_year" gorm:"column:expiry_year;not null"`
-	CardholderName  string        `json:"cardholder_name" gorm:"column:cardholder_name;not null"`
-	IsDefault       bool          `json:"is_default" gorm:"column:is_default;default:false"`
-	CreatedAt       time.Time     `json:"created_at" gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt       time.Time     `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
-	User            User          `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	PaymentMethod   PaymentMethod `json:"payment_method,omitempty" gorm:"foreignKey:PaymentMethodID"`
-}
 
 // PaymentTransaction represents payment transaction entity
 type PaymentTransaction struct {

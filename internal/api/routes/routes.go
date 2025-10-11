@@ -19,7 +19,6 @@ type Dependencies struct {
 	PaymentService      service.PaymentService
 	AddressService      service.AddressService
 	FavoritesService    service.FavoritesService
-	ChatService         service.ChatService
 	NotificationService service.NotificationService
 	UploadService       service.UploadService
 }

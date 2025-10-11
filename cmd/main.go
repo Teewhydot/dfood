@@ -61,7 +61,6 @@ func main() {
 	paymentService := service.NewPaymentService()
 	addressService := service.NewAddressService(addressRepo, userRepo)
 	favoritesService := service.NewFavoritesService(favoritesRepo, userRepo, foodRepo, restaurantRepo)
-	chatService := service.NewChatService()
 	notificationService := service.NewNotificationService(notificationRepo, userRepo)
 	uploadService := service.NewUploadService()
 
@@ -74,7 +73,6 @@ func main() {
 		PaymentService:      paymentService,
 		AddressService:      addressService,
 		FavoritesService:    favoritesService,
-		ChatService:         chatService,
 		NotificationService: notificationService,
 		UploadService:       uploadService,
 	}
