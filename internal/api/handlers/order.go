@@ -34,27 +34,34 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// TODO: In a real app, get userID from authenticated user context
-	// For now, we'll need to add userID to the request or get it from auth middleware
-	userID := c.GetString("user_id") // This would be set by auth middleware
-	if userID == "" {
-		// Fallback: require userID in request body for now
-		if orderRequest.UserID == "" {
-			result := errors.HandleError(
-				func() (interface{}, error) {
-					return nil, errors.NewHTTPError(http.StatusBadRequest, "User ID is required", nil)
-				},
-				"validating user ID",
-			)
-			result.RespondWithJSON(c)
-			return
-		}
-		userID = orderRequest.UserID
+	// Get user ID from context (set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting user ID from context",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusInternalServerError, "Invalid user ID format", nil)
+			},
+			"converting user ID to string",
+		)
+		result.RespondWithJSON(c)
+		return
 	}
 
 	result := errors.HandleError(
 		func() (interface{}, error) {
-			order, err := h.orderService.CreateOrder(userID, &orderRequest)
+			order, err := h.orderService.CreateOrder(userIDStr, &orderRequest)
 			if err != nil {
 				return nil, err
 			}

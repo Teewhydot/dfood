@@ -5,6 +5,7 @@ import (
 
 	"dfood/internal/api/handlers"
 	"dfood/internal/api/middleware"
+	"dfood/internal/repository"
 	"dfood/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,7 @@ type Dependencies struct {
 	FavoritesService    service.FavoritesService
 	NotificationService service.NotificationService
 	UploadService       service.UploadService
+	UserRepository      repository.UserRepository
 }
 
 func SetupRoutes(deps *Dependencies) *gin.Engine {
@@ -50,25 +52,26 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 		// 1. Authentication Endpoints
 		auth := v1.Group("/auth")
 		{
-			// User Authentication
+			// Public Authentication
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
-			auth.POST("/logout", authHandler.Logout)
-			auth.DELETE("/account", authHandler.DeleteAccount)
-
-			// Token Management
 			auth.POST("/refresh-token", authHandler.RefreshToken)
-
-			// Password Management
 			auth.POST("/forgot-password", authHandler.SendPasswordReset)
-			auth.PUT("/password", authHandler.UpdatePassword)
 
-			// User Info
-			auth.GET("/me", authHandler.GetCurrentUser)
+			// Protected Authentication (require valid token)
+			authProtected := auth.Group("")
+			authProtected.Use(middleware.AuthMiddleware(deps.UserRepository))
+			{
+				authProtected.POST("/logout", authHandler.Logout)
+				authProtected.DELETE("/account", authHandler.DeleteAccount)
+				authProtected.PUT("/password", authHandler.UpdatePassword)
+				authProtected.GET("/me", authHandler.GetCurrentUser)
+			}
 		}
 
-		// 2. User Profile Endpoints
+		// 2. User Profile Endpoints (Protected)
 		users := v1.Group("/users")
+		users.Use(middleware.AuthMiddleware(deps.UserRepository))
 		{
 			// Profile Management
 			users.GET("/:userId", userHandler.GetProfile)
@@ -137,8 +140,9 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			foods.GET("/search", foodHandler.SearchFoods)
 		}
 
-		// 5. Order Endpoints
+		// 5. Order Endpoints (Protected)
 		orders := v1.Group("/orders")
+		orders.Use(middleware.AuthMiddleware(deps.UserRepository))
 		{
 			// Order Management
 			orders.POST("", orderHandler.CreateOrder)
