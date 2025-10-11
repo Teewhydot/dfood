@@ -18,8 +18,6 @@ type AuthService interface {
 	DeleteAccount(email, token string) error
 	GetCurrentUser(token string) (*models.User, error)
 	RefreshToken(refreshToken string) (*models.User, error)
-	SendEmailVerification(email string) error
-	VerifyEmail(token string) error
 	SendPasswordReset(email string) error
 }
 
@@ -90,7 +88,7 @@ func (s *authService) Register(user *models.User) error {
 
 	// Set default values
 	user.FirstTimeLogin = true
-	user.EmailVerified = false
+	user.EmailVerified = true
 
 	// Set timestamps
 	now := time.Now()
@@ -289,106 +287,6 @@ func (s *authService) RefreshToken(refreshToken string) (*models.User, error) {
 	user.RefreshToken = newRefreshToken
 
 	return user, nil
-}
-
-func (s *authService) SendEmailVerification(email string) error {
-	// Check if user exists
-	user, err := s.userRepo.GetByEmail(email)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusNotFound, "User not found", err)
-	}
-
-	// Check if already verified
-	if user.EmailVerified {
-		return errors.NewHTTPError(http.StatusBadRequest, "Email already verified", nil)
-	}
-
-	// Generate verification token (valid for 24 hours)
-	verificationToken, err := utils.GenerateVerificationToken(email, 24*time.Hour)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to generate verification token", err)
-	}
-
-	// Send verification email
-	if s.emailService != nil {
-		subject := "Verify your dfood account"
-		plainText := `Hi ` + user.FirstName + `,
-
-Please verify your email address by clicking the link below:
-
-http://localhost:8080/api/v1/auth/verify-email?token=` + verificationToken + `
-
-This link will expire in 24 hours.
-
-If you didn't create an account with dfood, please ignore this email.
-
-Best regards,
-The dfood Team`
-
-		htmlContent := `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Verify your dfood account</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #2c3e50;">Verify your dfood account</h1>
-        <p>Hi ` + user.FirstName + `,</p>
-        <p>Please verify your email address by clicking the button below:</p>
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="http://localhost:8080/api/v1/auth/verify-email?token=` + verificationToken + `" 
-               style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                Verify Email Address
-            </a>
-        </div>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you didn't create an account with dfood, please ignore this email.</p>
-        <p>Best regards,<br>The dfood Team</p>
-    </div>
-</body>
-</html>`
-
-		err = s.emailService.SendEmail(user.Email, user.FirstName, subject, plainText, htmlContent)
-		if err != nil {
-			return errors.NewHTTPError(http.StatusInternalServerError, "Failed to send verification email", err)
-		}
-	}
-
-	return nil
-}
-
-func (s *authService) VerifyEmail(token string) error {
-	// Validate verification token
-	claims, err := utils.ValidateVerificationToken(token)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusBadRequest, "Invalid or expired verification token", err)
-	}
-
-	// Extract email from token
-	email, ok := (*claims)["sub"].(string)
-	if !ok {
-		return errors.NewHTTPError(http.StatusBadRequest, "Invalid token claims", nil)
-	}
-
-	// Get user from database
-	user, err := s.userRepo.GetByEmail(email)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusNotFound, "User not found", err)
-	}
-
-	// Check if already verified
-	if user.EmailVerified {
-		return errors.NewHTTPError(http.StatusBadRequest, "Email already verified", nil)
-	}
-
-	// Update user's email verification status
-	err = s.userRepo.UpdateEmailVerification(email, true)
-	if err != nil {
-		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to update email verification status", err)
-	}
-
-	return nil
 }
 
 func (s *authService) SendPasswordReset(email string) error {

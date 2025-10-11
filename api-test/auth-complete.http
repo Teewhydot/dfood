@@ -33,18 +33,9 @@ Content-Type: application/json
   "refresh_token": "YOUR_REFRESH_TOKEN"
 }
 
-### 5. Send email verification
-POST http://localhost:8080/api/v1/auth/send-email-verification
-Content-Type: application/json
 
-{
-  "email": "john.doe@example.com"
-}
 
-### 6. Verify email (replace VERIFICATION_TOKEN with token from email)
-GET http://localhost:8080/api/v1/auth/verify-email?token=VERIFICATION_TOKEN
-
-### 7. Update password
+### 5. Update password
 PUT http://localhost:8080/api/v1/auth/password
 Content-Type: application/json
 
@@ -54,7 +45,7 @@ Content-Type: application/json
   "new_password": "newpassword456"
 }
 
-### 8. Send password reset email (generates new password and sends via email)
+### 6. Send password reset email (generates new password and sends via email)
 POST http://localhost:8080/api/v1/auth/forgot-password
 Content-Type: application/json
 
@@ -62,7 +53,7 @@ Content-Type: application/json
   "email": "john.doe@example.com"
 }
 
-### 9. Login with new password (use the password received in email)
+### 7. Login with new password (use the password received in email)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -71,11 +62,11 @@ Content-Type: application/json
   "password": "NEW_PASSWORD_FROM_EMAIL"
 }
 
-### 10. Logout (replace YOUR_ACCESS_TOKEN with actual token)
+### 8. Logout (replace YOUR_ACCESS_TOKEN with actual token)
 POST http://localhost:8080/api/v1/auth/logout
 Authorization: Bearer YOUR_ACCESS_TOKEN
 
-### 11. Delete account (replace YOUR_ACCESS_TOKEN with actual token)
+### 9. Delete account (replace YOUR_ACCESS_TOKEN with actual token)
 DELETE http://localhost:8080/api/v1/auth/account
 Content-Type: application/json
 

@@ -10,7 +10,6 @@ type UserRepository interface {
 	GetByID(id string) (*models.User, error)
 	EmailExists(email string) (bool, error)
 	UpdatePassword(email, hashedPassword string) error
-	UpdateEmailVerification(email string, verified bool) error
 	Update(id string, updates map[string]interface{}) error
 	UpdateField(id, field string, value interface{}) error
 	UpdateFCMToken(id, token string) error

@@ -49,17 +49,6 @@ Content-Type: application/json
 
 ###
 
-### Send Email Verification (Not Implemented - External Service)
-POST http://localhost:8080/api/v1/auth/send-email-verification
-Content-Type: application/json
-Authorization: Bearer {{access_token}}
-
-###
-
-### Verify Email Status (Not Implemented - External Service)
-GET http://localhost:8080/api/v1/auth/verify-email-status
-Authorization: Bearer {{access_token}}
-
 ###
 
 ### Get Current User

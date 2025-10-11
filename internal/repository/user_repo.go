@@ -92,10 +92,3 @@ func (r *userRepository) UpdateFCMToken(id, token string) error {
 	}
 	return nil
 }
-func (r *userRepository) UpdateEmailVerification(email string, verified bool) error {
-	err := r.db.Model(&models.User{}).Where("email = ?", email).Update("email_verified", verified).Error
-	if err != nil {
-		return pkgErrors.NewHTTPError(http.StatusInternalServerError, "Failed to update email verification status", err)
-	}
-	return nil
-}

@@ -21,11 +21,3 @@ type VerifyOtpRequest struct {
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
-
-type EmailVerificationRequest struct {
-	Email string `json:"email" binding:"required,email"`
-}
-
-type VerifyEmailRequest struct {
-	Token string `json:"token" binding:"required"`
-}

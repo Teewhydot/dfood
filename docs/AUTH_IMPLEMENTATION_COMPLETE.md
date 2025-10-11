@@ -18,9 +18,7 @@ This document outlines the complete authentication system implementation for the
 - `PUT /api/v1/auth/password` - Update password (requires current password)
 - `POST /api/v1/auth/forgot-password` - Generate new password and send via email
 
-### Email Verification
-- `POST /api/v1/auth/send-email-verification` - Send email verification
-- `GET /api/v1/auth/verify-email` - Verify email using verification token
+
 
 ### Account Management
 - `DELETE /api/v1/auth/account` - Delete user account
@@ -30,7 +28,6 @@ This document outlines the complete authentication system implementation for the
 ### JWT Token System
 - **Access Tokens**: Short-lived (15 minutes) for API access
 - **Refresh Tokens**: Long-lived (7 days) for token renewal
-- **Verification Tokens**: Time-limited tokens for email verification only
 
 ### Token Security
 - Token blacklisting for logout functionality
@@ -44,7 +41,6 @@ This document outlines the complete authentication system implementation for the
 - Prevention of reusing current password
 
 ### Email Security
-- Email verification system
 - Simple password reset flow (auto-generates new password)
 - Professional email templates (HTML + plain text)
 
@@ -81,10 +77,6 @@ type ForgotPasswordRequest struct {
 
 
 
-type EmailVerificationRequest struct {
-    Email string `json:"email" binding:"required,email"`
-}
-
 type DeleteAccountRequest struct {
     Email string `json:"email" binding:"required,email"`
     Token string `json:"token" binding:"required"`
@@ -115,8 +107,6 @@ type AuthService interface {
     DeleteAccount(email, token string) error
     GetCurrentUser(token string) (*models.User, error)
     RefreshToken(refreshToken string) (*models.User, error)
-    SendEmailVerification(email string) error
-    VerifyEmail(token string) error
     SendPasswordReset(email string) error
 }
 ```
@@ -131,7 +121,7 @@ type UserRepository interface {
     GetByID(id string) (*models.User, error)
     EmailExists(email string) (bool, error)
     UpdatePassword(email, hashedPassword string) error
-    UpdateEmailVerification(email string, verified bool) error
+
     Update(id string, updates map[string]interface{}) error
     UpdateField(id, field string, value interface{}) error
     UpdateFCMToken(id, token string) error
@@ -170,7 +160,6 @@ This approach eliminates the need for reset tokens and provides immediate passwo
 
 ### Email Service
 - Welcome emails on registration
-- Email verification emails
 - Password reset emails with new temporary password
 - Professional HTML and plain text templates
 - Asynchronous email sending (non-blocking)

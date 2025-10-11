@@ -64,10 +64,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			auth.POST("/forgot-password", authHandler.SendPasswordReset)
 			auth.PUT("/password", authHandler.UpdatePassword)
 
-			// Email Verification
-			auth.POST("/send-email-verification", authHandler.SendEmailVerification)
-			auth.GET("/verify-email", authHandler.VerifyEmail)
-
 			// User Info
 			auth.GET("/me", authHandler.GetCurrentUser)
 		}
