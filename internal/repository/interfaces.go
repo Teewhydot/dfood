@@ -43,8 +43,7 @@ type OrderRepository interface {
 
 type PaymentRepository interface {
 	GetPaymentMethods() ([]models.PaymentMethod, error)
-	GetUserCards(userID string) ([]models.Card, error)
-	CreateCard(card *models.Card) error
+
 	DeleteCard(id string) error
 	CreateTransaction(transaction *models.PaymentTransaction) error
 	GetTransactionByID(id string) (*models.PaymentTransaction, error)
@@ -74,21 +73,14 @@ type FavoritesRepository interface {
 	GetFavoritesStats(userID string) (map[string]int, error)
 }
 
-type ChatRepository interface {
-	GetByUserID(userID string) ([]models.Chat, error)
-	GetByID(id string) (*models.Chat, error)
-	Create(chat *models.Chat) error
-	UpdateLastMessage(id, message string) error
-	GetMessages(chatID string, limit, offset int) ([]models.Message, error)
-	CreateMessage(message *models.Message) error
-	MarkMessageAsRead(messageID string) error
-	DeleteMessage(messageID string) error
-	GetOrCreateChat(senderID, receiverID string, orderID *string) (*models.Chat, error)
-}
 
 type NotificationRepository interface {
 	GetByUserID(userID string, limit, offset int) ([]models.Notification, error)
 	Create(notification *models.Notification) error
 	MarkAsRead(id string) error
 	Delete(id string) error
+}
+
+type EmailRepository interface {
+	SendEmail(to, subject, body string) error
 }

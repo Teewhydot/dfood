@@ -5,6 +5,7 @@ import (
 
 	"dfood/internal/api/handlers"
 	"dfood/internal/api/middleware"
+	"dfood/internal/repository"
 	"dfood/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -19,9 +20,9 @@ type Dependencies struct {
 	PaymentService      service.PaymentService
 	AddressService      service.AddressService
 	FavoritesService    service.FavoritesService
-	ChatService         service.ChatService
 	NotificationService service.NotificationService
 	UploadService       service.UploadService
+	UserRepository      repository.UserRepository
 }
 
 func SetupRoutes(deps *Dependencies) *gin.Engine {
@@ -42,7 +43,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 	paymentHandler := handlers.NewPaymentHandler(deps.PaymentService)
 	addressHandler := handlers.NewAddressHandler(deps.AddressService)
 	favoritesHandler := handlers.NewFavoritesHandler(deps.FavoritesService)
-	chatHandler := handlers.NewChatHandler(deps.ChatService)
 	notificationHandler := handlers.NewNotificationHandler(deps.NotificationService)
 	uploadHandler := handlers.NewUploadHandler(deps.UploadService)
 
@@ -52,22 +52,26 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 		// 1. Authentication Endpoints
 		auth := v1.Group("/auth")
 		{
-			// User Authentication
+			// Public Authentication
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
-			auth.POST("/logout", authHandler.Logout)
-			auth.DELETE("/delete-account", authHandler.DeleteAccount)
+			auth.POST("/refresh-token", authHandler.RefreshToken)
+			auth.POST("/forgot-password", authHandler.SendPasswordReset)
 
-			// Email Management
-			auth.POST("/send-password-reset", authHandler.SendPasswordReset)
-			auth.POST("/send-email-verification", authHandler.SendEmailVerification)
-			auth.GET("/verify-email-status", authHandler.VerifyEmailStatus)
-			auth.GET("/current-user", authHandler.GetCurrentUser)
-			auth.POST("/password/update", authHandler.UpdatePassword)
+			// Protected Authentication (require valid token)
+			authProtected := auth.Group("")
+			authProtected.Use(middleware.AuthMiddleware(deps.UserRepository))
+			{
+				authProtected.POST("/logout", authHandler.Logout)
+				authProtected.DELETE("/account", authHandler.DeleteAccount)
+				authProtected.PUT("/password", authHandler.UpdatePassword)
+				authProtected.GET("/me", authHandler.GetCurrentUser)
+			}
 		}
 
-		// 2. User Profile Endpoints
+		// 2. User Profile Endpoints (Protected)
 		users := v1.Group("/users")
+		users.Use(middleware.AuthMiddleware(deps.UserRepository))
 		{
 			// Profile Management
 			users.GET("/:userId", userHandler.GetProfile)
@@ -103,10 +107,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			users.GET("/:userId/favorites/foods/stream", favoritesHandler.GetFavoriteFoodsStream)
 			users.GET("/:userId/favorites/restaurants/stream", favoritesHandler.GetFavoriteRestaurantsStream)
 
-			// User Chats
-			users.GET("/:userId/chats", chatHandler.GetUserChats)
-			users.GET("/:userId/chats/stream", chatHandler.GetChatsStream)
-
 			// User Notifications
 			users.GET("/:userId/notifications", notificationHandler.GetUserNotifications)
 			users.GET("/:userId/notifications/stream", notificationHandler.GetNotificationsStream)
@@ -140,8 +140,9 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			foods.GET("/search", foodHandler.SearchFoods)
 		}
 
-		// 5. Order Endpoints
+		// 5. Order Endpoints (Protected)
 		orders := v1.Group("/orders")
+		orders.Use(middleware.AuthMiddleware(deps.UserRepository))
 		{
 			// Order Management
 			orders.POST("", orderHandler.CreateOrder)
@@ -165,26 +166,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			payments.POST("/process", paymentHandler.ProcessPayment)
 			payments.GET("/transaction/:transactionId", paymentHandler.GetTransactionDetails)
 			payments.POST("/refund", paymentHandler.ProcessRefund)
-		}
-
-		// 7. Chat/Messaging Endpoints
-		chats := v1.Group("/chats")
-		{
-			// Chat Management
-			chats.GET("/:chatId", chatHandler.GetChatDetails)
-			chats.POST("", chatHandler.CreateOrGetChat)
-			chats.PUT("/:chatId/last-message", chatHandler.UpdateLastMessage)
-			chats.GET("/:chatId/messages", chatHandler.GetChatMessages)
-			chats.POST("/:chatId/messages", chatHandler.SendMessage)
-			chats.GET("/:chatId/messages/stream", chatHandler.GetMessagesStream)
-			chats.GET("/:chatId/new-messages/stream", chatHandler.GetNewMessagesStream)
-		}
-
-		// Message Management
-		messages := v1.Group("/messages")
-		{
-			messages.PUT("/:messageId/read", chatHandler.MarkMessageAsRead)
-			messages.DELETE("/:messageId", chatHandler.DeleteMessage)
 		}
 
 		// 8. Notification Endpoints

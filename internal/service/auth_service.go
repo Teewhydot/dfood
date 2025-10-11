@@ -16,6 +16,9 @@ type AuthService interface {
 	UpdatePassword(email, currentPassword, newPassword string) error
 	Logout(token string) error
 	DeleteAccount(email, token string) error
+	GetCurrentUser(token string) (*models.User, error)
+	RefreshToken(refreshToken string) (*models.User, error)
+	SendPasswordReset(email string) error
 }
 
 type authService struct {
@@ -85,7 +88,7 @@ func (s *authService) Register(user *models.User) error {
 
 	// Set default values
 	user.FirstTimeLogin = true
-	user.EmailVerified = false
+	user.EmailVerified = true
 
 	// Set timestamps
 	now := time.Now()
@@ -215,4 +218,151 @@ func (s *authService) DeleteAccount(email, token string) error {
 	_ = user
 
 	return errors.NewHTTPError(http.StatusNotImplemented, "Account deletion not implemented", nil)
+}
+
+func (s *authService) GetCurrentUser(token string) (*models.User, error) {
+	// Validate token first
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusUnauthorized, "Invalid token", err)
+	}
+
+	// Extract email from token
+	email, ok := (*claims)["sub"].(string)
+	if !ok {
+		return nil, errors.NewHTTPError(http.StatusUnauthorized, "Invalid token claims", nil)
+	}
+
+	// Get user from database
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusNotFound, "User not found", err)
+	}
+
+	// Clear sensitive information
+	user.Password = ""
+
+	return user, nil
+}
+
+func (s *authService) RefreshToken(refreshToken string) (*models.User, error) {
+	// Validate refresh token
+	claims, err := utils.ValidateToken(refreshToken)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusUnauthorized, "Invalid refresh token", err)
+	}
+
+	// Check if it's actually a refresh token
+	isRefresh, ok := (*claims)["is_refresh"].(bool)
+	if !ok || !isRefresh {
+		return nil, errors.NewHTTPError(http.StatusUnauthorized, "Token is not a refresh token", nil)
+	}
+
+	// Extract email from token
+	email, ok := (*claims)["sub"].(string)
+	if !ok {
+		return nil, errors.NewHTTPError(http.StatusUnauthorized, "Invalid token claims", nil)
+	}
+
+	// Get user from database
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusNotFound, "User not found", err)
+	}
+
+	// Generate new tokens
+	accessToken, err := utils.GenerateJwtToken(user.Email, false)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token", err)
+	}
+
+	newRefreshToken, err := utils.GenerateJwtToken(user.Email, true)
+	if err != nil {
+		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to generate refresh token", err)
+	}
+
+	// Clear sensitive information
+	user.Password = ""
+	user.AccessToken = accessToken
+	user.RefreshToken = newRefreshToken
+
+	return user, nil
+}
+
+func (s *authService) SendPasswordReset(email string) error {
+	// Check if user exists (but don't reveal if they don't for security)
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		// Return success even if user doesn't exist for security
+		return nil
+	}
+
+	// Generate a new random password
+	newPassword := utils.GenerateRandomPassword(12)
+
+	// Hash the new password
+	hashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to hash new password", err)
+	}
+
+	// Update the user's password in the database
+	err = s.userRepo.UpdatePassword(email, hashedPassword)
+	if err != nil {
+		return errors.NewHTTPError(http.StatusInternalServerError, "Failed to update password", err)
+	}
+
+	// Invalidate all existing tokens for this user
+	utils.InvalidateAllUserTokens(email)
+
+	// Send the new password via email
+	if s.emailService != nil {
+		subject := "Your new dfood password"
+		plainText := `Hi ` + user.FirstName + `,
+
+We received a request to reset your password for your dfood account.
+
+Your new temporary password is: ` + newPassword + `
+
+Please use this password to log in and then update it to something more memorable using the "Update Password" feature in your account settings.
+
+For security reasons, we recommend changing this password as soon as possible after logging in.
+
+If you didn't request a password reset, please contact our support team immediately.
+
+Best regards,
+The dfood Team`
+
+		htmlContent := `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Your new dfood password</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2c3e50;">Your new dfood password</h1>
+        <p>Hi ` + user.FirstName + `,</p>
+        <p>We received a request to reset your password for your dfood account.</p>
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
+            <h3 style="margin-top: 0; color: #e74c3c;">Your new temporary password:</h3>
+            <div style="font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; background-color: #fff; padding: 15px; border: 2px solid #e74c3c; border-radius: 5px; display: inline-block;">
+                ` + newPassword + `
+            </div>
+        </div>
+        <p><strong>Important:</strong> Please use this password to log in and then update it to something more memorable using the "Update Password" feature in your account settings.</p>
+        <p>For security reasons, we recommend changing this password as soon as possible after logging in.</p>
+        <p>If you didn't request a password reset, please contact our support team immediately.</p>
+        <p>Best regards,<br>The dfood Team</p>
+    </div>
+</body>
+</html>`
+
+		err = s.emailService.SendEmail(user.Email, user.FirstName, subject, plainText, htmlContent)
+		if err != nil {
+			return errors.NewHTTPError(http.StatusInternalServerError, "Failed to send password reset email", err)
+		}
+	}
+
+	return nil
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"dfood/internal/service"
+	"dfood/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,8 +19,18 @@ func NewAddressHandler(addressService service.AddressService) *AddressHandler {
 
 // User Addresses
 func (h *AddressHandler) GetUserAddresses(c *gin.Context) {
-	// TODO: Implement get user's saved addresses
-	c.JSON(200, gin.H{"message": "Get user addresses - TODO"})
+	id := c.Param("id")
+		result := errors.HandleError(
+		func() (interface{}, error) {
+			review, err := h.addressService.GetUserAddresses(id)
+			if err != nil {
+				return nil, err
+			}
+			return review, nil
+		},
+		"getting review",
+	)
+	result.RespondWithJSON(c)
 }
 
 func (h *AddressHandler) SaveAddress(c *gin.Context) {

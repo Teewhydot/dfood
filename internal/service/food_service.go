@@ -10,13 +10,13 @@ import (
 )
 
 type FoodService interface {
-	GetAllFoods(limit, offset int) ([]models.Food, error)
-	GetFoodByID(id string) (*models.Food, error)
-	GetPopularFoods(limit int) ([]models.Food, error)
-	GetRecommendedFoods(userID string, limit int) ([]models.Food, error)
-	GetFoodsByCategory(category string, limit, offset int) ([]models.Food, error)
-	GetFoodsByRestaurant(restaurantID string, limit, offset int) ([]models.Food, error)
-	SearchFoods(query string, limit, offset int) ([]models.Food, error)
+	GetAll(limit, offset int) ([]models.Food, error)
+	GetByID(id string) (*models.Food, error)
+	GetPopular(limit int) ([]models.Food, error)
+	GetRecommended(limit int) ([]models.Food, error)
+	GetByCategory(category string, limit, offset int) ([]models.Food, error)
+	GetByRestaurant(restaurantID string, limit, offset int) ([]models.Food, error)
+	Search(query string, limit, offset int) ([]models.Food, error)
 }
 
 type foodService struct {
@@ -29,7 +29,7 @@ func NewFoodService(foodRepo repository.FoodRepository) FoodService {
 	}
 }
 
-func (s *foodService) GetAllFoods(limit, offset int) ([]models.Food, error) {
+func (s *foodService) GetAll(limit, offset int) ([]models.Food, error) {
 	if limit <= 0 {
 		limit = 20 // Default limit
 	}
@@ -43,7 +43,7 @@ func (s *foodService) GetAllFoods(limit, offset int) ([]models.Food, error) {
 	return s.foodRepo.GetAll(limit, offset)
 }
 
-func (s *foodService) GetFoodByID(id string) (*models.Food, error) {
+func (s *foodService) GetByID(id string) (*models.Food, error) {
 	if strings.TrimSpace(id) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Food ID is required", nil)
 	}
@@ -51,7 +51,7 @@ func (s *foodService) GetFoodByID(id string) (*models.Food, error) {
 	return s.foodRepo.GetByID(id)
 }
 
-func (s *foodService) GetPopularFoods(limit int) ([]models.Food, error) {
+func (s *foodService) GetPopular(limit int) ([]models.Food, error) {
 	if limit <= 0 {
 		limit = 10 // Default limit
 	}
@@ -62,10 +62,7 @@ func (s *foodService) GetPopularFoods(limit int) ([]models.Food, error) {
 	return s.foodRepo.GetPopular(limit)
 }
 
-func (s *foodService) GetRecommendedFoods(userID string, limit int) ([]models.Food, error) {
-	if strings.TrimSpace(userID) == "" {
-		return nil, errors.NewHTTPError(http.StatusBadRequest, "User ID is required", nil)
-	}
+func (s *foodService) GetRecommended(limit int) ([]models.Food, error) {
 	if limit <= 0 {
 		limit = 10 // Default limit
 	}
@@ -78,7 +75,7 @@ func (s *foodService) GetRecommendedFoods(userID string, limit int) ([]models.Fo
 	return s.foodRepo.GetPopular(limit)
 }
 
-func (s *foodService) GetFoodsByCategory(category string, limit, offset int) ([]models.Food, error) {
+func (s *foodService) GetByCategory(category string, limit, offset int) ([]models.Food, error) {
 	if strings.TrimSpace(category) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Category is required", nil)
 	}
@@ -95,7 +92,7 @@ func (s *foodService) GetFoodsByCategory(category string, limit, offset int) ([]
 	return s.foodRepo.GetByCategory(category, limit, offset)
 }
 
-func (s *foodService) GetFoodsByRestaurant(restaurantID string, limit, offset int) ([]models.Food, error) {
+func (s *foodService) GetByRestaurant(restaurantID string, limit, offset int) ([]models.Food, error) {
 	if strings.TrimSpace(restaurantID) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Restaurant ID is required", nil)
 	}
@@ -112,7 +109,7 @@ func (s *foodService) GetFoodsByRestaurant(restaurantID string, limit, offset in
 	return s.foodRepo.GetByRestaurant(restaurantID, limit, offset)
 }
 
-func (s *foodService) SearchFoods(query string, limit, offset int) ([]models.Food, error) {
+func (s *foodService) Search(query string, limit, offset int) ([]models.Food, error) {
 	if strings.TrimSpace(query) == "" {
 		return nil, errors.NewHTTPError(http.StatusBadRequest, "Search query is required", nil)
 	}

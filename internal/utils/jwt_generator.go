@@ -23,8 +23,9 @@ func GenerateJwtToken(email string, isRefresh bool) (string, error) {
 		expirationTime = time.Now().Add(15 * time.Minute)
 	}
 	claims := &jwt.MapClaims{
-		"sub": email,
-		"exp": expirationTime.Unix(),
+		"sub":        email,
+		"exp":        expirationTime.Unix(),
+		"is_refresh": isRefresh,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtKey)

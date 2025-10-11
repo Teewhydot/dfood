@@ -38,3 +38,29 @@ func GenerateRestaurantID() string {
 func GenerateFoodID() string {
 	return "food-" + GenerateID()
 }
+
+// GenerateRandomPassword generates a random password with specified length
+func GenerateRandomPassword(length int) string {
+	if length < 8 {
+		length = 8 // Minimum password length
+	}
+
+	// Character sets for password generation
+	lowercase := "abcdefghijklmnopqrstuvwxyz"
+	uppercase := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	numbers := "0123456789"
+	special := "!@#$%^&*"
+
+	// Combine all character sets
+	allChars := lowercase + uppercase + numbers + special
+
+	// Generate random password
+	password := make([]byte, length)
+	for i := range password {
+		randomIndex := make([]byte, 1)
+		rand.Read(randomIndex)
+		password[i] = allChars[int(randomIndex[0])%len(allChars)]
+	}
+
+	return string(password)
+}

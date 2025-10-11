@@ -9,9 +9,14 @@ import (
 	"dfood/pkg/logger"
 	"fmt"
 	"log"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+
 	cfg, err := config.New()
 	if err != nil {
 		logger.Error("Failed to initialize config", "error", err)
@@ -56,7 +61,6 @@ func main() {
 	paymentService := service.NewPaymentService()
 	addressService := service.NewAddressService(addressRepo, userRepo)
 	favoritesService := service.NewFavoritesService(favoritesRepo, userRepo, foodRepo, restaurantRepo)
-	chatService := service.NewChatService()
 	notificationService := service.NewNotificationService(notificationRepo, userRepo)
 	uploadService := service.NewUploadService()
 
@@ -69,7 +73,6 @@ func main() {
 		PaymentService:      paymentService,
 		AddressService:      addressService,
 		FavoritesService:    favoritesService,
-		ChatService:         chatService,
 		NotificationService: notificationService,
 		UploadService:       uploadService,
 	}

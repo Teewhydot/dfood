@@ -100,31 +100,146 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 // Additional Authentication Endpoints
 func (h *AuthHandler) Logout(c *gin.Context) {
-	// TODO: Implement user logout
-	c.JSON(200, gin.H{"message": "User logout - TODO"})
+	// Get token from Authorization header
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "Authorization header required", nil)
+			},
+			"getting authorization header",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	// Extract token (remove "Bearer " prefix)
+	token := authHeader
+	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		token = authHeader[7:]
+	}
+
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			err := h.authService.Logout(token)
+			if err != nil {
+				return nil, err
+			}
+			return gin.H{"message": "Successfully logged out"}, nil
+		},
+		"logging out user",
+	)
+	result.RespondWithJSON(c)
 }
 
 func (h *AuthHandler) DeleteAccount(c *gin.Context) {
-	// TODO: Implement delete user account and associated data
-	c.JSON(200, gin.H{"message": "Delete account - TODO"})
+	var deleteRequest models.DeleteAccountRequest
+	if err := c.ShouldBindJSON(&deleteRequest); err != nil {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusBadRequest, "Invalid JSON payload", err)
+			},
+			"binding JSON for delete account",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			err := h.authService.DeleteAccount(deleteRequest.Email, deleteRequest.Token)
+			if err != nil {
+				return nil, err
+			}
+			return gin.H{"message": "Account successfully deleted"}, nil
+		},
+		"deleting user account",
+	)
+	result.RespondWithJSON(c)
 }
 
 func (h *AuthHandler) SendPasswordReset(c *gin.Context) {
-	// TODO: Implement send password reset email
-	c.JSON(200, gin.H{"message": "Send password reset - TODO"})
-}
+	var resetRequest models.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&resetRequest); err != nil {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusBadRequest, "Invalid JSON payload", err)
+			},
+			"binding JSON for password reset",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
 
-func (h *AuthHandler) SendEmailVerification(c *gin.Context) {
-	// TODO: Implement send email verification
-	c.JSON(200, gin.H{"message": "Send email verification - TODO"})
-}
-
-func (h *AuthHandler) VerifyEmailStatus(c *gin.Context) {
-	// TODO: Implement check email verification status
-	c.JSON(200, gin.H{"message": "Verify email status - TODO"})
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			err := h.authService.SendPasswordReset(resetRequest.Email)
+			if err != nil {
+				return nil, err
+			}
+			return gin.H{
+				"message": "If an account with that email exists, a password reset link has been sent",
+			}, nil
+		},
+		"sending password reset email",
+	)
+	result.RespondWithJSON(c)
 }
 
 func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
-	// TODO: Implement get current authenticated user info
-	c.JSON(200, gin.H{"message": "Get current user - TODO"})
+	// Get token from Authorization header
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "Authorization header required", nil)
+			},
+			"getting authorization header",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	// Extract token (remove "Bearer " prefix)
+	token := authHeader
+	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		token = authHeader[7:]
+	}
+
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			user, err := h.authService.GetCurrentUser(token)
+			if err != nil {
+				return nil, err
+			}
+			return user, nil
+		},
+		"getting current user",
+	)
+	result.RespondWithJSON(c)
+}
+func (h *AuthHandler) RefreshToken(c *gin.Context) {
+	var refreshRequest models.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&refreshRequest); err != nil {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusBadRequest, "Invalid JSON payload", err)
+			},
+			"binding JSON for refresh token",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	result := errors.HandleError(
+		func() (interface{}, error) {
+			user, err := h.authService.RefreshToken(refreshRequest.RefreshToken)
+			if err != nil {
+				return nil, err
+			}
+			return user, nil
+		},
+		"refreshing token",
+	)
+	result.RespondWithJSON(c)
 }

@@ -15,7 +15,6 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-
 // UpdatePasswordModel represents password update request
 type UpdatePasswordRequest struct {
 	Email           string `json:"email"`
@@ -31,18 +30,28 @@ type AuthResponse struct {
 	UserProfile User   `json:"userProfile"`
 }
 
+// OrderItemRequest represents order item in request
+type OrderItemRequest struct {
+	FoodID              string  `json:"foodId" binding:"required"`
+	Name                string  `json:"name" binding:"required"`
+	Price               float64 `json:"price" binding:"required,min=0"`
+	Quantity            int     `json:"quantity" binding:"required,min=1"`
+	SpecialInstructions *string `json:"specialInstructions,omitempty"`
+}
+
 // CreateOrderRequest represents create order request
 type CreateOrderRequest struct {
-	RestaurantID    string      `json:"restaurantId" binding:"required"`
-	RestaurantName  string      `json:"restaurantName" binding:"required"`
-	Items           []OrderItem `json:"items" binding:"required,min=1"`
-	Subtotal        float64     `json:"subtotal" binding:"required,min=0"`
-	DeliveryFee     float64     `json:"deliveryFee" binding:"required,min=0"`
-	Tax             float64     `json:"tax" binding:"required,min=0"`
-	Total           float64     `json:"total" binding:"required,min=0"`
-	DeliveryAddress string      `json:"deliveryAddress" binding:"required"`
-	PaymentMethodID string      `json:"paymentMethodId" binding:"required"`
-	Notes           *string     `json:"notes,omitempty"`
+	UserID          string             `json:"userId,omitempty"` // Optional, can be set by auth middleware
+	RestaurantID    string             `json:"restaurantId" binding:"required"`
+	RestaurantName  string             `json:"restaurantName" binding:"required"`
+	Items           []OrderItemRequest `json:"items" binding:"required,min=1"`
+	Subtotal        float64            `json:"subtotal" binding:"required,min=0"`
+	DeliveryFee     float64            `json:"deliveryFee" binding:"required,min=0"`
+	Tax             float64            `json:"tax" binding:"required,min=0"`
+	Total           float64            `json:"total" binding:"required,min=0"`
+	DeliveryAddress string             `json:"deliveryAddress" binding:"required"`
+	PaymentMethodID string             `json:"paymentMethodId" binding:"required"`
+	Notes           *string            `json:"notes,omitempty"`
 }
 
 // UpdateOrderStatusRequest represents update order status request
