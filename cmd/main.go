@@ -9,9 +9,14 @@ import (
 	"dfood/pkg/logger"
 	"fmt"
 	"log"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+
 	cfg, err := config.New()
 	if err != nil {
 		logger.Error("Failed to initialize config", "error", err)

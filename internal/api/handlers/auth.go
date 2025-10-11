@@ -114,16 +114,6 @@ func (h *AuthHandler) SendPasswordReset(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Send password reset - TODO"})
 }
 
-func (h *AuthHandler) SendEmailVerification(c *gin.Context) {
-	// TODO: Implement send email verification
-	c.JSON(200, gin.H{"message": "Send email verification - TODO"})
-}
-
-func (h *AuthHandler) VerifyEmailStatus(c *gin.Context) {
-	// TODO: Implement check email verification status
-	c.JSON(200, gin.H{"message": "Verify email status - TODO"})
-}
-
 func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	// TODO: Implement get current authenticated user info
 	c.JSON(200, gin.H{"message": "Get current user - TODO"})

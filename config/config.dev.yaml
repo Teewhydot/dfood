@@ -7,5 +7,5 @@ db:
 log_level: debug
 sendgrid:
   api_key: ${SENDGRID_API_KEY}
-  from_email: noreply@dfood-dev.com
+  from_email: abubakarissa47722@gmail.com
   from_name: dfood Development

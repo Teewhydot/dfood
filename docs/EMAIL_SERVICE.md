@@ -16,13 +16,24 @@ set SENDGRID_API_KEY=your_sendgrid_api_key_here
 $env:SENDGRID_API_KEY="your_sendgrid_api_key_here"
 ```
 
-### 2. Configuration
+### 2. Verify Sender Email in SendGrid
+**IMPORTANT**: Before sending emails, you must verify the sender email address in SendGrid:
+
+1. Go to [SendGrid Dashboard](https://app.sendgrid.com/settings/sender_auth)
+2. Click "Verify a Single Sender"
+3. Enter your email details and verify
+4. Update the `from_email` in your config files to match the verified email
+
+**Common Error**: `403 Forbidden - "The from address does not match a verified Sender Identity"`
+- **Solution**: Ensure the `from_email` in your config matches a verified sender in SendGrid
+
+### 3. Configuration
 The service uses configuration from your YAML files:
 
 ```yaml
 sendgrid:
   api_key: ${SENDGRID_API_KEY}
-  from_email: noreply@dfood.com
+  from_email: abubakarissa47722@gmail.com  # Must be verified in SendGrid
   from_name: dfood
 ```
 
@@ -124,6 +135,40 @@ Errors are wrapped with context for better debugging.
 2. **Error Logging**: Log email failures but don't fail the main operation
 3. **Template Updates**: Update email templates in the service code
 4. **Testing**: Use SendGrid's sandbox mode for testing
+
+## Troubleshooting
+
+### Error: 403 Forbidden - Sender Identity Not Verified
+**Problem**: `The from address does not match a verified Sender Identity`
+
+**Solution**:
+1. Verify your sender email at https://app.sendgrid.com/settings/sender_auth
+2. Ensure config `from_email` matches the verified email exactly
+3. Restart your application after config changes
+
+### Error: 401 Unauthorized
+**Problem**: Invalid SendGrid API key
+
+**Solution**:
+1. Check `SENDGRID_API_KEY` environment variable is set correctly
+2. Verify API key hasn't expired in SendGrid dashboard
+3. Ensure no extra spaces in the API key
+
+### Email Not Received
+**Check**:
+1. Verify sender email is verified in SendGrid
+2. Check spam/junk folder
+3. Review SendGrid activity logs at https://app.sendgrid.com/email_activity
+4. Ensure API key has sending permissions
+
+### Testing Email Sending
+```bash
+# Restart app after config changes
+go run cmd/main.go
+
+# Monitor logs for SendGrid responses
+# Look for: "Email sent successfully - Status: 202"
+```
 
 ## Future Enhancements
 

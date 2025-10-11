@@ -92,3 +92,8 @@ type NotificationRepository interface {
 	MarkAsRead(id string) error
 	Delete(id string) error
 }
+
+
+type EmailRepository interface {
+	SendEmail(to, subject, body string) error
+}

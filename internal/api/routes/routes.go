@@ -42,7 +42,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 	paymentHandler := handlers.NewPaymentHandler(deps.PaymentService)
 	addressHandler := handlers.NewAddressHandler(deps.AddressService)
 	favoritesHandler := handlers.NewFavoritesHandler(deps.FavoritesService)
-	chatHandler := handlers.NewChatHandler(deps.ChatService)
 	notificationHandler := handlers.NewNotificationHandler(deps.NotificationService)
 	uploadHandler := handlers.NewUploadHandler(deps.UploadService)
 
@@ -60,8 +59,6 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 
 			// Email Management
 			auth.POST("/send-password-reset", authHandler.SendPasswordReset)
-			auth.POST("/send-email-verification", authHandler.SendEmailVerification)
-			auth.GET("/verify-email-status", authHandler.VerifyEmailStatus)
 			auth.GET("/current-user", authHandler.GetCurrentUser)
 			auth.POST("/password/update", authHandler.UpdatePassword)
 		}
@@ -103,10 +100,7 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			users.GET("/:userId/favorites/foods/stream", favoritesHandler.GetFavoriteFoodsStream)
 			users.GET("/:userId/favorites/restaurants/stream", favoritesHandler.GetFavoriteRestaurantsStream)
 
-			// User Chats
-			users.GET("/:userId/chats", chatHandler.GetUserChats)
-			users.GET("/:userId/chats/stream", chatHandler.GetChatsStream)
-
+		
 			// User Notifications
 			users.GET("/:userId/notifications", notificationHandler.GetUserNotifications)
 			users.GET("/:userId/notifications/stream", notificationHandler.GetNotificationsStream)
@@ -167,26 +161,7 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			payments.POST("/refund", paymentHandler.ProcessRefund)
 		}
 
-		// 7. Chat/Messaging Endpoints
-		chats := v1.Group("/chats")
-		{
-			// Chat Management
-			chats.GET("/:chatId", chatHandler.GetChatDetails)
-			chats.POST("", chatHandler.CreateOrGetChat)
-			chats.PUT("/:chatId/last-message", chatHandler.UpdateLastMessage)
-			chats.GET("/:chatId/messages", chatHandler.GetChatMessages)
-			chats.POST("/:chatId/messages", chatHandler.SendMessage)
-			chats.GET("/:chatId/messages/stream", chatHandler.GetMessagesStream)
-			chats.GET("/:chatId/new-messages/stream", chatHandler.GetNewMessagesStream)
-		}
-
-		// Message Management
-		messages := v1.Group("/messages")
-		{
-			messages.PUT("/:messageId/read", chatHandler.MarkMessageAsRead)
-			messages.DELETE("/:messageId", chatHandler.DeleteMessage)
-		}
-
+	
 		// 8. Notification Endpoints
 		notifications := v1.Group("/notifications")
 		{
