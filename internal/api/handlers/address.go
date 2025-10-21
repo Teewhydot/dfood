@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"dfood/internal/models"
 	"dfood/internal/service"
 	"dfood/pkg/errors"
 	"net/http"
@@ -37,7 +36,7 @@ func (h *AddressHandler) GetUserAddresses(c *gin.Context) {
 }
 
 func (h *AddressHandler) SaveAddress(c *gin.Context) {
-	
+
 }
 
 func (h *AddressHandler) UpdateAddress(c *gin.Context) {
@@ -95,17 +94,9 @@ func (h *AddressHandler) GetAddressStream(c *gin.Context) {
 		return
 	}
 
-	// Get WebSocket service from address service
-	if wsService := h.addressService.GetWebSocketService(); wsService != nil {
-		wsService.HandleConnection(models.WSConnectionTypeAddress, userID, userID, conn)
-	} else {
-		conn.Close()
-		result := errors.HandleError(
-			func() (interface{}, error) {
-				return nil, errors.NewHTTPError(http.StatusServiceUnavailable, "WebSocket service not available", nil)
-			},
-			"getting WebSocket service",
-		)
-		result.RespondWithJSON(c)
-	}
+	// WebSocket functionality not implemented for addresses yet
+	conn.Close()
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "Address WebSocket streaming not implemented yet",
+	})
 }

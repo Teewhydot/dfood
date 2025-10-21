@@ -18,13 +18,13 @@ type UserService interface {
 	SyncProfile(userID string) error
 	UpdateFCMToken(userID, token string) error
 	GetFCMToken(userID string) (string, error)
-	SetWebSocketService(wsService WebSocketService)
-	GetWebSocketService() WebSocketService
+	// WebSocket integration
+	SetWebSocketService(wsService *WebSocketService)
 }
 
 type userService struct {
 	userRepo  repository.UserRepository
-	wsService WebSocketService
+	wsService *WebSocketService // WebSocket service
 }
 
 func NewUserService(userRepo repository.UserRepository) UserService {
@@ -33,13 +33,9 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 	}
 }
 
-// WebSocket service methods
-func (s *userService) SetWebSocketService(wsService WebSocketService) {
+// WebSocket service method
+func (s *userService) SetWebSocketService(wsService *WebSocketService) {
 	s.wsService = wsService
-}
-
-func (s *userService) GetWebSocketService() WebSocketService {
-	return s.wsService
 }
 
 func (s *userService) GetByID(userID string) (*models.User, error) {
@@ -96,12 +92,12 @@ func (s *userService) Update(userID string, updates map[string]interface{}) erro
 		return err
 	}
 
-	// Broadcast update via WebSocket if service is available
+	// Send WebSocket update if service is available
 	if s.wsService != nil {
 		user, _ := s.userRepo.GetByID(userID)
 		if user != nil {
 			user.Password = "" // Clear sensitive data
-			s.wsService.BroadcastUserUpdate(userID, user, updates)
+			s.wsService.SendUserUpdate(userID, user, updates)
 		}
 	}
 
@@ -141,13 +137,13 @@ func (s *userService) UpdateField(userID, field string, value interface{}) error
 		return err
 	}
 
-	// Broadcast update via WebSocket if service is available
+	// Send WebSocket update if service is available
 	if s.wsService != nil {
 		user, _ := s.userRepo.GetByID(userID)
 		if user != nil {
 			user.Password = "" // Clear sensitive data
 			changes := map[string]interface{}{field: value}
-			s.wsService.BroadcastUserUpdate(userID, user, changes)
+			s.wsService.SendUserUpdate(userID, user, changes)
 		}
 	}
 

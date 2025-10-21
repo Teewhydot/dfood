@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"dfood/internal/models"
 	"dfood/internal/service"
 	"dfood/pkg/errors"
 	"net/http"
@@ -116,20 +115,11 @@ func (h *FavoritesHandler) GetFavoriteFoodsStream(c *gin.Context) {
 		return
 	}
 
-	// Get WebSocket service from favorites service
-	if wsService := h.favoritesService.GetWebSocketService(); wsService != nil {
-		resourceKey := userID + "_foods"
-		wsService.HandleConnection(models.WSConnectionTypeFavorites, userID, resourceKey, conn)
-	} else {
-		conn.Close()
-		result := errors.HandleError(
-			func() (interface{}, error) {
-				return nil, errors.NewHTTPError(http.StatusServiceUnavailable, "WebSocket service not available", nil)
-			},
-			"getting WebSocket service",
-		)
-		result.RespondWithJSON(c)
-	}
+	// WebSocket functionality not implemented for favorites yet
+	conn.Close()
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "Favorites WebSocket streaming not implemented yet",
+	})
 }
 
 func (h *FavoritesHandler) GetFavoriteRestaurantsStream(c *gin.Context) {
@@ -167,18 +157,9 @@ func (h *FavoritesHandler) GetFavoriteRestaurantsStream(c *gin.Context) {
 		return
 	}
 
-	// Get WebSocket service from favorites service
-	if wsService := h.favoritesService.GetWebSocketService(); wsService != nil {
-		resourceKey := userID + "_restaurants"
-		wsService.HandleConnection(models.WSConnectionTypeFavorites, userID, resourceKey, conn)
-	} else {
-		conn.Close()
-		result := errors.HandleError(
-			func() (interface{}, error) {
-				return nil, errors.NewHTTPError(http.StatusServiceUnavailable, "WebSocket service not available", nil)
-			},
-			"getting WebSocket service",
-		)
-		result.RespondWithJSON(c)
-	}
+	// WebSocket functionality not implemented for favorites yet
+	conn.Close()
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "Favorites WebSocket streaming not implemented yet",
+	})
 }

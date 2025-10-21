@@ -22,8 +22,8 @@ type Dependencies struct {
 	FavoritesService    service.FavoritesService
 	NotificationService service.NotificationService
 	UploadService       service.UploadService
-	WebSocketService    service.WebSocketService
 	UserRepository      repository.UserRepository
+	// Note: Simple WebSocket service is created and managed within routes
 }
 
 func SetupRoutes(deps *Dependencies) *gin.Engine {
@@ -35,11 +35,11 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 	router.Use(gin.Recovery())
 	router.Use(middleware.RateLimitMiddleware(10, time.Minute)) // 10 requests per minute per IP
 
-	// Set WebSocket service in all services that need it
-	deps.UserService.SetWebSocketService(deps.WebSocketService)
-	deps.AddressService.SetWebSocketService(deps.WebSocketService)
-	deps.FavoritesService.SetWebSocketService(deps.WebSocketService)
-	deps.NotificationService.SetWebSocketService(deps.WebSocketService)
+	// Initialize WebSocket Service
+	wsService := service.NewWebSocketService()
+
+	// Set WebSocket service in user service
+	deps.UserService.SetWebSocketService(wsService)
 
 	// Initialize Handlers
 	authHandler := handlers.NewAuthHandler(deps.AuthService)
@@ -52,15 +52,9 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 	favoritesHandler := handlers.NewFavoritesHandler(deps.FavoritesService)
 	notificationHandler := handlers.NewNotificationHandler(deps.NotificationService)
 	uploadHandler := handlers.NewUploadHandler(deps.UploadService)
-	wsHandler := handlers.NewWebSocketHandler(
-		deps.WebSocketService,
-		deps.UserService,
-		deps.OrderService,
-		deps.NotificationService,
-		deps.RestaurantService,
-		deps.AddressService,
-		deps.FavoritesService,
-	)
+
+	// Initialize WebSocket Handler
+	wsHandler := handlers.NewWebSocketHandler(wsService, deps.UserService)
 
 	// API v1 Routes
 	v1 := router.Group("/api/v1")
@@ -210,32 +204,11 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 		}
 
 		// 10. WebSocket Endpoints
-		ws := v1.Group("/ws")
-		ws.Use(middleware.AuthMiddleware(deps.UserRepository))
-		{
-			// User WebSocket endpoints
-			ws.GET("/users/:userId/watch", wsHandler.WatchUserDetails)
+		// User profile updates endpoint
+		v1.GET("/users/:userId/watch", wsHandler.WatchUserProfile)
 
-			// Order WebSocket endpoints
-			ws.GET("/orders/:orderId/watch", wsHandler.WatchOrder)
-			ws.GET("/users/:userId/orders/watch", wsHandler.WatchUserOrders)
-
-			// Notification WebSocket endpoints
-			ws.GET("/users/:userId/notifications/watch", wsHandler.WatchNotifications)
-
-			// Restaurant WebSocket endpoints
-			ws.GET("/restaurants/:restaurantId/watch", wsHandler.WatchRestaurant)
-
-			// Address WebSocket endpoints
-			ws.GET("/users/:userId/addresses/watch", wsHandler.WatchAddresses)
-
-			// Favorites WebSocket endpoints
-			ws.GET("/users/:userId/favorites/foods/watch", wsHandler.WatchFavoriteFoods)
-			ws.GET("/users/:userId/favorites/restaurants/watch", wsHandler.WatchFavoriteRestaurants)
-
-			// WebSocket stats (admin only)
-			ws.GET("/stats", wsHandler.GetWebSocketStats)
-		}
+		// WebSocket stats endpoint
+		v1.GET("/websocket/stats", wsHandler.GetConnectionStats)
 	}
 
 	return router

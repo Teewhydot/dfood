@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"dfood/internal/models"
 	"dfood/internal/service"
 	"dfood/pkg/errors"
 	"net/http"
@@ -182,19 +181,13 @@ func (h *UserHandler) GetProfileStream(c *gin.Context) {
 		return
 	}
 
-	// Get WebSocket service from user service
-	if wsService := h.userService.GetWebSocketService(); wsService != nil {
-		wsService.HandleConnection(models.WSConnectionTypeUser, userID, userID, conn)
-	} else {
-		conn.Close()
-		result := errors.HandleError(
-			func() (interface{}, error) {
-				return nil, errors.NewHTTPError(http.StatusServiceUnavailable, "WebSocket service not available", nil)
-			},
-			"getting WebSocket service",
-		)
-		result.RespondWithJSON(c)
-	}
+	// Use the new simplified WebSocket endpoint instead
+	conn.Close()
+	c.JSON(http.StatusMovedPermanently, gin.H{
+		"error":        "This endpoint has moved",
+		"new_endpoint": "/api/v1/users/" + userID + "/watch",
+		"message":      "Please use the new WebSocket endpoint",
+	})
 }
 
 func (h *UserHandler) SyncProfile(c *gin.Context) {

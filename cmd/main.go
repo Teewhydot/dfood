@@ -64,15 +64,7 @@ func main() {
 	notificationService := service.NewNotificationService(notificationRepo, userRepo)
 	uploadService := service.NewUploadService()
 
-	// Initialize WebSocket service
-	wsService := service.NewWebSocketService(
-		userRepo,
-		orderRepo,
-		notificationRepo,
-		restaurantRepo,
-		addressRepo,
-		favoritesRepo,
-	)
+	// Simple WebSocket service is created in routes (no complex setup needed!)
 
 	deps := &routes.Dependencies{
 		AuthService:         authService,
@@ -85,7 +77,6 @@ func main() {
 		FavoritesService:    favoritesService,
 		NotificationService: notificationService,
 		UploadService:       uploadService,
-		WebSocketService:    wsService,
 		UserRepository:      userRepo,
 	}
 

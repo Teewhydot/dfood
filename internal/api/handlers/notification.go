@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"dfood/internal/models"
 	"dfood/internal/service"
 	"dfood/pkg/errors"
 	"net/http"
@@ -76,19 +75,11 @@ func (h *NotificationHandler) GetNotificationsStream(c *gin.Context) {
 		return
 	}
 
-	// Get WebSocket service from notification service
-	if wsService := h.notificationService.GetWebSocketService(); wsService != nil {
-		wsService.HandleConnection(models.WSConnectionTypeNotification, userID, userID, conn)
-	} else {
-		conn.Close()
-		result := errors.HandleError(
-			func() (interface{}, error) {
-				return nil, errors.NewHTTPError(http.StatusServiceUnavailable, "WebSocket service not available", nil)
-			},
-			"getting WebSocket service",
-		)
-		result.RespondWithJSON(c)
-	}
+	// WebSocket functionality not implemented for notifications yet
+	conn.Close()
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "Notifications WebSocket streaming not implemented yet",
+	})
 }
 
 // Push Notifications
