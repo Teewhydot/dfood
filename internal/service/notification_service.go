@@ -10,16 +10,20 @@ import (
 )
 
 type NotificationService interface {
+	GetByUserID(userID string, limit, offset int) ([]models.Notification, error)
 	GetUserNotifications(userID string, limit, offset int) ([]models.Notification, error)
 	SendNotification(notification *models.Notification) error
 	MarkNotificationAsRead(notificationID string) error
 	DeleteNotification(notificationID string) error
 	SendPushNotification(userID, title, body string, data map[string]interface{}) error
+	SetWebSocketService(wsService WebSocketService)
+	GetWebSocketService() WebSocketService
 }
 
 type notificationService struct {
 	notificationRepo repository.NotificationRepository
 	userRepo         repository.UserRepository
+	wsService        WebSocketService
 }
 
 func NewNotificationService(notificationRepo repository.NotificationRepository, userRepo repository.UserRepository) NotificationService {
@@ -27,6 +31,19 @@ func NewNotificationService(notificationRepo repository.NotificationRepository, 
 		notificationRepo: notificationRepo,
 		userRepo:         userRepo,
 	}
+}
+
+// WebSocket service methods
+func (s *notificationService) SetWebSocketService(wsService WebSocketService) {
+	s.wsService = wsService
+}
+
+func (s *notificationService) GetWebSocketService() WebSocketService {
+	return s.wsService
+}
+
+func (s *notificationService) GetByUserID(userID string, limit, offset int) ([]models.Notification, error) {
+	return s.GetUserNotifications(userID, limit, offset)
 }
 
 func (s *notificationService) GetUserNotifications(userID string, limit, offset int) ([]models.Notification, error) {

@@ -10,17 +10,21 @@ import (
 )
 
 type AddressService interface {
+	GetByUserID(userID string) ([]models.Address, error)
 	GetUserAddresses(userID string) ([]models.Address, error)
 	SaveAddress(address *models.Address) error
 	UpdateAddress(addressID string, updates map[string]interface{}) error
 	DeleteAddress(addressID string) error
 	GetDefaultAddress(userID string) (*models.Address, error)
 	SetDefaultAddress(userID, addressID string) error
+	SetWebSocketService(wsService WebSocketService)
+	GetWebSocketService() WebSocketService
 }
 
 type addressService struct {
 	addressRepo repository.AddressRepository
 	userRepo    repository.UserRepository
+	wsService   WebSocketService
 }
 
 func NewAddressService(addressRepo repository.AddressRepository, userRepo repository.UserRepository) AddressService {
@@ -29,6 +33,20 @@ func NewAddressService(addressRepo repository.AddressRepository, userRepo reposi
 		userRepo:    userRepo,
 	}
 }
+
+// WebSocket service methods
+func (s *addressService) SetWebSocketService(wsService WebSocketService) {
+	s.wsService = wsService
+}
+
+func (s *addressService) GetWebSocketService() WebSocketService {
+	return s.wsService
+}
+
+func (s *addressService) GetByUserID(userID string) ([]models.Address, error) {
+	return s.GetUserAddresses(userID)
+}
+
 
 func (s *addressService) GetUserAddresses(userID string) ([]models.Address, error) {
 	if strings.TrimSpace(userID) == "" {

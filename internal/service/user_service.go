@@ -18,16 +18,28 @@ type UserService interface {
 	SyncProfile(userID string) error
 	UpdateFCMToken(userID, token string) error
 	GetFCMToken(userID string) (string, error)
+	SetWebSocketService(wsService WebSocketService)
+	GetWebSocketService() WebSocketService
 }
 
 type userService struct {
-	userRepo repository.UserRepository
+	userRepo  repository.UserRepository
+	wsService WebSocketService
 }
 
 func NewUserService(userRepo repository.UserRepository) UserService {
 	return &userService{
 		userRepo: userRepo,
 	}
+}
+
+// WebSocket service methods
+func (s *userService) SetWebSocketService(wsService WebSocketService) {
+	s.wsService = wsService
+}
+
+func (s *userService) GetWebSocketService() WebSocketService {
+	return s.wsService
 }
 
 func (s *userService) GetByID(userID string) (*models.User, error) {
@@ -79,7 +91,21 @@ func (s *userService) Update(userID string, updates map[string]interface{}) erro
 		}
 	}
 
-	return s.userRepo.Update(userID, updates)
+	err = s.userRepo.Update(userID, updates)
+	if err != nil {
+		return err
+	}
+
+	// Broadcast update via WebSocket if service is available
+	if s.wsService != nil {
+		user, _ := s.userRepo.GetByID(userID)
+		if user != nil {
+			user.Password = "" // Clear sensitive data
+			s.wsService.BroadcastUserUpdate(userID, user, updates)
+		}
+	}
+
+	return nil
 }
 
 func (s *userService) UpdateField(userID, field string, value interface{}) error {
@@ -110,7 +136,22 @@ func (s *userService) UpdateField(userID, field string, value interface{}) error
 		return err
 	}
 
-	return s.userRepo.UpdateField(userID, field, value)
+	err = s.userRepo.UpdateField(userID, field, value)
+	if err != nil {
+		return err
+	}
+
+	// Broadcast update via WebSocket if service is available
+	if s.wsService != nil {
+		user, _ := s.userRepo.GetByID(userID)
+		if user != nil {
+			user.Password = "" // Clear sensitive data
+			changes := map[string]interface{}{field: value}
+			s.wsService.BroadcastUserUpdate(userID, user, changes)
+		}
+	}
+
+	return nil
 }
 
 func (s *userService) UploadProfileImage(userID, imageURL string) error {

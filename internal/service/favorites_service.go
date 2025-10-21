@@ -22,6 +22,8 @@ type FavoritesService interface {
 	ToggleRestaurantFavorite(userID, restaurantID string) (bool, error)
 	ClearAllFavorites(userID string) error
 	GetFavoritesStats(userID string) (map[string]int, error)
+	SetWebSocketService(wsService WebSocketService)
+	GetWebSocketService() WebSocketService
 }
 
 type favoritesService struct {
@@ -29,6 +31,7 @@ type favoritesService struct {
 	userRepo       repository.UserRepository
 	foodRepo       repository.FoodRepository
 	restaurantRepo repository.RestaurantRepository
+	wsService      WebSocketService
 }
 
 func NewFavoritesService(favoritesRepo repository.FavoritesRepository, userRepo repository.UserRepository, foodRepo repository.FoodRepository, restaurantRepo repository.RestaurantRepository) FavoritesService {
@@ -38,6 +41,15 @@ func NewFavoritesService(favoritesRepo repository.FavoritesRepository, userRepo 
 		foodRepo:       foodRepo,
 		restaurantRepo: restaurantRepo,
 	}
+}
+
+// WebSocket service methods
+func (s *favoritesService) SetWebSocketService(wsService WebSocketService) {
+	s.wsService = wsService
+}
+
+func (s *favoritesService) GetWebSocketService() WebSocketService {
+	return s.wsService
 }
 
 func (s *favoritesService) GetFavoriteFoods(userID string) ([]models.Food, error) {

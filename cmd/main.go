@@ -64,6 +64,16 @@ func main() {
 	notificationService := service.NewNotificationService(notificationRepo, userRepo)
 	uploadService := service.NewUploadService()
 
+	// Initialize WebSocket service
+	wsService := service.NewWebSocketService(
+		userRepo,
+		orderRepo,
+		notificationRepo,
+		restaurantRepo,
+		addressRepo,
+		favoritesRepo,
+	)
+
 	deps := &routes.Dependencies{
 		AuthService:         authService,
 		UserService:         userService,
@@ -75,6 +85,8 @@ func main() {
 		FavoritesService:    favoritesService,
 		NotificationService: notificationService,
 		UploadService:       uploadService,
+		WebSocketService:    wsService,
+		UserRepository:      userRepo,
 	}
 
 	router := routes.SetupRoutes(deps)
