@@ -22,23 +22,22 @@ func NewAddressHandler(addressService service.AddressService) *AddressHandler {
 
 // User Addresses
 func (h *AddressHandler) GetUserAddresses(c *gin.Context) {
-	id := c.Param("id")
+	userID := c.Param("userId") // ✅ CORRECT - matches route parameter
 	result := errors.HandleError(
 		func() (interface{}, error) {
-			review, err := h.addressService.GetUserAddresses(id)
+			addresses, err := h.addressService.GetUserAddresses(userID) // ✅ Better variable name
 			if err != nil {
 				return nil, err
 			}
-			return review, nil
+			return addresses, nil
 		},
-		"getting review",
+		"getting user addresses", // ✅ Better error message
 	)
 	result.RespondWithJSON(c)
 }
 
 func (h *AddressHandler) SaveAddress(c *gin.Context) {
-	// TODO: Implement save new address
-	c.JSON(200, gin.H{"message": "Save address - TODO"})
+	
 }
 
 func (h *AddressHandler) UpdateAddress(c *gin.Context) {
