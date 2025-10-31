@@ -8,9 +8,26 @@ import (
 
 // Message types - just what we need
 const (
+	// User messages
 	MessageTypeUserUpdate = "user_update"
 	MessageTypeConnected  = "connected"
 	MessageTypeError      = "error"
+
+	// Address messages
+	MessageTypeAddressAdd     = "address_add"
+	MessageTypeAddressUpdate  = "address_update"
+	MessageTypeAddressDelete  = "address_delete"
+	MessageTypeAddressDefault = "address_default"
+
+	// Favorites messages
+	MessageTypeFavoriteAdd    = "favorite_add"
+	MessageTypeFavoriteRemove = "favorite_remove"
+	MessageTypeFavoritesClear = "favorites_clear"
+
+	// Notification messages
+	MessageTypeNotificationNew    = "notification_new"
+	MessageTypeNotificationRead   = "notification_read"
+	MessageTypeNotificationDelete = "notification_delete"
 )
 
 // WSMessage - like a DTO in Flutter
@@ -33,4 +50,25 @@ type WSConnection struct {
 type UserUpdateData struct {
 	User    *User                  `json:"user"`    // Complete updated user object
 	Changes map[string]interface{} `json:"changes"` // Only the fields that changed
+}
+
+// AddressUpdateData - for address changes
+type AddressUpdateData struct {
+	Address *Address               `json:"address"`           // Address object
+	Action  string                 `json:"action"`            // "add", "update", "delete", "set_default"
+	Changes map[string]interface{} `json:"changes,omitempty"` // What changed (for updates)
+}
+
+// FavoriteUpdateData - for favorites changes
+type FavoriteUpdateData struct {
+	ResourceType string      `json:"resource_type"` // "food" or "restaurant"
+	ResourceID   string      `json:"resource_id"`   // ID of the item
+	Action       string      `json:"action"`        // "add", "remove", "clear"
+	Resource     interface{} `json:"resource"`      // The actual Food or Restaurant object
+}
+
+// NotificationUpdateData - for notification changes
+type NotificationUpdateData struct {
+	Notification *Notification `json:"notification"` // Notification object
+	Action       string        `json:"action"`       // "new", "read", "delete"
 }

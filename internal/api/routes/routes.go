@@ -41,6 +41,14 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 	// Set WebSocket service in user service
 	deps.UserService.SetWebSocketService(wsService)
 
+	// Initialize Realtime Service for all WebSocket endpoints
+	realtimeService := service.NewRealtimeService()
+
+	// Set RealtimeService in services that need it
+	deps.AddressService.SetRealtimeService(realtimeService)
+	deps.FavoritesService.SetRealtimeService(realtimeService)
+	deps.NotificationService.SetRealtimeService(realtimeService)
+
 	// Initialize Handlers
 	authHandler := handlers.NewAuthHandler(deps.AuthService)
 	userHandler := handlers.NewUserHandler(deps.UserService)
@@ -55,6 +63,15 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 
 	// Initialize WebSocket Handler
 	wsHandler := handlers.NewWebSocketHandler(wsService, deps.UserService)
+
+	// Initialize Realtime Handler for all WebSocket endpoints
+	realtimeHandler := handlers.NewRealtimeHandler(
+		realtimeService,
+		deps.UserService,
+		deps.AddressService,
+		deps.FavoritesService,
+		deps.NotificationService,
+	)
 
 	// API v1 Routes
 	v1 := router.Group("/api/v1")
@@ -203,12 +220,35 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			upload.DELETE("/:imageId", uploadHandler.DeleteImage)
 		}
 
-		// 10. WebSocket Endpoints
+		// 10. WebSocket Endpoints (Legacy - kept for backward compatibility)
 		// User profile updates endpoint
 		v1.GET("/users/:userId/watch", wsHandler.WatchUserProfile)
 
 		// WebSocket stats endpoint
 		v1.GET("/websocket/stats", wsHandler.GetConnectionStats)
+
+		// 11. Realtime WebSocket Endpoints (New unified approach)
+		realtime := v1.Group("/realtime")
+		realtime.Use(middleware.AuthMiddleware(deps.UserRepository))
+		{
+			// User profile updates
+			realtime.GET("/users/:userId/watch", realtimeHandler.WatchUserProfile)
+
+			// Address updates
+			realtime.GET("/users/:userId/addresses/watch", realtimeHandler.WatchAddresses)
+
+			// Favorite foods updates
+			realtime.GET("/users/:userId/favorites/foods/watch", realtimeHandler.WatchFavoriteFoods)
+
+			// Favorite restaurants updates
+			realtime.GET("/users/:userId/favorites/restaurants/watch", realtimeHandler.WatchFavoriteRestaurants)
+
+			// Notification updates
+			realtime.GET("/users/:userId/notifications/watch", realtimeHandler.WatchNotifications)
+
+			// Connection statistics
+			realtime.GET("/stats", realtimeHandler.GetConnectionStats)
+		}
 	}
 
 	return router

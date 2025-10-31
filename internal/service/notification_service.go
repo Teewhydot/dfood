@@ -18,12 +18,14 @@ type NotificationService interface {
 	SendPushNotification(userID, title, body string, data map[string]interface{}) error
 	SetWebSocketService(wsService WebSocketService)
 	GetWebSocketService() WebSocketService
+	SetRealtimeService(realtimeService *RealtimeService)
 }
 
 type notificationService struct {
 	notificationRepo repository.NotificationRepository
 	userRepo         repository.UserRepository
 	wsService        WebSocketService
+	realtimeService  *RealtimeService
 }
 
 func NewNotificationService(notificationRepo repository.NotificationRepository, userRepo repository.UserRepository) NotificationService {
@@ -40,6 +42,10 @@ func (s *notificationService) SetWebSocketService(wsService WebSocketService) {
 
 func (s *notificationService) GetWebSocketService() WebSocketService {
 	return s.wsService
+}
+
+func (s *notificationService) SetRealtimeService(realtimeService *RealtimeService) {
+	s.realtimeService = realtimeService
 }
 
 func (s *notificationService) GetByUserID(userID string, limit, offset int) ([]models.Notification, error) {
@@ -98,7 +104,17 @@ func (s *notificationService) SendNotification(notification *models.Notification
 		notification.Type = "system" // Default to system
 	}
 
-	return s.notificationRepo.Create(notification)
+	err = s.notificationRepo.Create(notification)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil {
+		s.realtimeService.SendNotificationNew(notification.UserID, notification)
+	}
+
+	return nil
 }
 
 func (s *notificationService) MarkNotificationAsRead(notificationID string) error {
@@ -106,6 +122,9 @@ func (s *notificationService) MarkNotificationAsRead(notificationID string) erro
 		return errors.NewHTTPError(http.StatusBadRequest, "Notification ID is required", nil)
 	}
 
+	// Mark notification as read
+	// Note: Realtime updates for mark as read are not implemented yet
+	// as the repository doesn't provide GetByID method
 	return s.notificationRepo.MarkAsRead(notificationID)
 }
 
@@ -114,6 +133,9 @@ func (s *notificationService) DeleteNotification(notificationID string) error {
 		return errors.NewHTTPError(http.StatusBadRequest, "Notification ID is required", nil)
 	}
 
+	// Delete notification
+	// Note: Realtime updates for delete are not implemented yet
+	// as the repository doesn't provide GetByID method
 	return s.notificationRepo.Delete(notificationID)
 }
 

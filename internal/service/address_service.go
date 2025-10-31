@@ -19,12 +19,14 @@ type AddressService interface {
 	SetDefaultAddress(userID, addressID string) error
 	SetWebSocketService(wsService WebSocketService)
 	GetWebSocketService() WebSocketService
+	SetRealtimeService(realtimeService *RealtimeService)
 }
 
 type addressService struct {
-	addressRepo repository.AddressRepository
-	userRepo    repository.UserRepository
-	wsService   WebSocketService
+	addressRepo     repository.AddressRepository
+	userRepo        repository.UserRepository
+	wsService       WebSocketService
+	realtimeService *RealtimeService
 }
 
 func NewAddressService(addressRepo repository.AddressRepository, userRepo repository.UserRepository) AddressService {
@@ -41,6 +43,10 @@ func (s *addressService) SetWebSocketService(wsService WebSocketService) {
 
 func (s *addressService) GetWebSocketService() WebSocketService {
 	return s.wsService
+}
+
+func (s *addressService) SetRealtimeService(realtimeService *RealtimeService) {
+	s.realtimeService = realtimeService
 }
 
 func (s *addressService) GetByUserID(userID string) ([]models.Address, error) {
@@ -99,7 +105,17 @@ func (s *addressService) SaveAddress(address *models.Address) error {
 		address.Type = "home" // Default to home
 	}
 
-	return s.addressRepo.Create(address)
+	err = s.addressRepo.Create(address)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil {
+		s.realtimeService.SendAddressAdd(address.UserID, address)
+	}
+
+	return nil
 }
 
 func (s *addressService) UpdateAddress(addressID string, updates map[string]interface{}) error {
@@ -134,7 +150,18 @@ func (s *addressService) UpdateAddress(addressID string, updates map[string]inte
 		}
 	}
 
-	return s.addressRepo.Update(addressID, updates)
+	err = s.addressRepo.Update(addressID, updates)
+	if err != nil {
+		return err
+	}
+
+	// Get updated address and send realtime update
+	updatedAddress, err := s.addressRepo.GetByID(addressID)
+	if err == nil && s.realtimeService != nil {
+		s.realtimeService.SendAddressUpdate(updatedAddress.UserID, updatedAddress, updates)
+	}
+
+	return nil
 }
 
 func (s *addressService) DeleteAddress(addressID string) error {
@@ -142,13 +169,23 @@ func (s *addressService) DeleteAddress(addressID string) error {
 		return errors.NewHTTPError(http.StatusBadRequest, "Address ID is required", nil)
 	}
 
-	// Validate address exists
-	_, err := s.addressRepo.GetByID(addressID)
+	// Validate address exists and get it for realtime update
+	address, err := s.addressRepo.GetByID(addressID)
 	if err != nil {
 		return err
 	}
 
-	return s.addressRepo.Delete(addressID)
+	err = s.addressRepo.Delete(addressID)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil {
+		s.realtimeService.SendAddressDelete(address.UserID, address)
+	}
+
+	return nil
 }
 
 func (s *addressService) GetDefaultAddress(userID string) (*models.Address, error) {
@@ -189,5 +226,16 @@ func (s *addressService) SetDefaultAddress(userID, addressID string) error {
 		return errors.NewHTTPError(http.StatusForbidden, "Address does not belong to user", nil)
 	}
 
-	return s.addressRepo.SetDefault(userID, addressID)
+	err = s.addressRepo.SetDefault(userID, addressID)
+	if err != nil {
+		return err
+	}
+
+	// Get updated address and send realtime update
+	updatedAddress, err := s.addressRepo.GetByID(addressID)
+	if err == nil && s.realtimeService != nil {
+		s.realtimeService.SendAddressDefault(userID, updatedAddress)
+	}
+
+	return nil
 }

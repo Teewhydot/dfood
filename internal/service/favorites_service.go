@@ -24,14 +24,16 @@ type FavoritesService interface {
 	GetFavoritesStats(userID string) (map[string]int, error)
 	SetWebSocketService(wsService WebSocketService)
 	GetWebSocketService() WebSocketService
+	SetRealtimeService(realtimeService *RealtimeService)
 }
 
 type favoritesService struct {
-	favoritesRepo  repository.FavoritesRepository
-	userRepo       repository.UserRepository
-	foodRepo       repository.FoodRepository
-	restaurantRepo repository.RestaurantRepository
-	wsService      WebSocketService
+	favoritesRepo   repository.FavoritesRepository
+	userRepo        repository.UserRepository
+	foodRepo        repository.FoodRepository
+	restaurantRepo  repository.RestaurantRepository
+	wsService       WebSocketService
+	realtimeService *RealtimeService
 }
 
 func NewFavoritesService(favoritesRepo repository.FavoritesRepository, userRepo repository.UserRepository, foodRepo repository.FoodRepository, restaurantRepo repository.RestaurantRepository) FavoritesService {
@@ -50,6 +52,10 @@ func (s *favoritesService) SetWebSocketService(wsService WebSocketService) {
 
 func (s *favoritesService) GetWebSocketService() WebSocketService {
 	return s.wsService
+}
+
+func (s *favoritesService) SetRealtimeService(realtimeService *RealtimeService) {
+	s.realtimeService = realtimeService
 }
 
 func (s *favoritesService) GetFavoriteFoods(userID string) ([]models.Food, error) {
@@ -109,7 +115,21 @@ func (s *favoritesService) AddFavoriteFood(userID, foodID string) error {
 		return errors.NewHTTPError(http.StatusConflict, "Food is already in favorites", nil)
 	}
 
-	return s.favoritesRepo.AddFavoriteFood(userID, foodID)
+	err = s.favoritesRepo.AddFavoriteFood(userID, foodID)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil {
+		// Get the food details to send in the update
+		food, foodErr := s.foodRepo.GetByID(foodID)
+		if foodErr == nil {
+			s.realtimeService.SendFavoriteAdd(userID, "food", foodID, food)
+		}
+	}
+
+	return nil
 }
 
 func (s *favoritesService) RemoveFavoriteFood(userID, foodID string) error {
@@ -135,7 +155,23 @@ func (s *favoritesService) RemoveFavoriteFood(userID, foodID string) error {
 		return errors.NewHTTPError(http.StatusNotFound, "Food is not in favorites", nil)
 	}
 
-	return s.favoritesRepo.RemoveFavoriteFood(userID, foodID)
+	// Get the food details before removing for realtime update
+	var food *models.Food
+	if s.realtimeService != nil {
+		food, _ = s.foodRepo.GetByID(foodID)
+	}
+
+	err = s.favoritesRepo.RemoveFavoriteFood(userID, foodID)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil && food != nil {
+		s.realtimeService.SendFavoriteRemove(userID, "food", foodID, food)
+	}
+
+	return nil
 }
 
 func (s *favoritesService) AddFavoriteRestaurant(userID, restaurantID string) error {
@@ -167,7 +203,21 @@ func (s *favoritesService) AddFavoriteRestaurant(userID, restaurantID string) er
 		return errors.NewHTTPError(http.StatusConflict, "Restaurant is already in favorites", nil)
 	}
 
-	return s.favoritesRepo.AddFavoriteRestaurant(userID, restaurantID)
+	err = s.favoritesRepo.AddFavoriteRestaurant(userID, restaurantID)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil {
+		// Get the restaurant details to send in the update
+		restaurant, restaurantErr := s.restaurantRepo.GetByID(restaurantID)
+		if restaurantErr == nil {
+			s.realtimeService.SendFavoriteAdd(userID, "restaurant", restaurantID, restaurant)
+		}
+	}
+
+	return nil
 }
 
 func (s *favoritesService) RemoveFavoriteRestaurant(userID, restaurantID string) error {
@@ -193,7 +243,23 @@ func (s *favoritesService) RemoveFavoriteRestaurant(userID, restaurantID string)
 		return errors.NewHTTPError(http.StatusNotFound, "Restaurant is not in favorites", nil)
 	}
 
-	return s.favoritesRepo.RemoveFavoriteRestaurant(userID, restaurantID)
+	// Get the restaurant details before removing for realtime update
+	var restaurant *models.Restaurant
+	if s.realtimeService != nil {
+		restaurant, _ = s.restaurantRepo.GetByID(restaurantID)
+	}
+
+	err = s.favoritesRepo.RemoveFavoriteRestaurant(userID, restaurantID)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil && restaurant != nil {
+		s.realtimeService.SendFavoriteRemove(userID, "restaurant", restaurantID, restaurant)
+	}
+
+	return nil
 }
 
 func (s *favoritesService) CheckFoodFavoriteStatus(userID, foodID string) (bool, error) {
@@ -291,7 +357,17 @@ func (s *favoritesService) ClearAllFavorites(userID string) error {
 		return err
 	}
 
-	return s.favoritesRepo.ClearAllFavorites(userID)
+	err = s.favoritesRepo.ClearAllFavorites(userID)
+	if err != nil {
+		return err
+	}
+
+	// Send realtime update
+	if s.realtimeService != nil {
+		s.realtimeService.SendFavoritesClear(userID)
+	}
+
+	return nil
 }
 
 func (s *favoritesService) GetFavoritesStats(userID string) (map[string]int, error) {
