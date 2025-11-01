@@ -6,6 +6,7 @@ import (
 	"dfood/internal/database"
 	"dfood/internal/repository"
 	"dfood/internal/service"
+	"dfood/internal/utils"
 	"dfood/pkg/logger"
 	"fmt"
 	"log"
@@ -26,6 +27,13 @@ func main() {
 	logger.Init(cfg.Env)
 	logger.Info("Starting API server", "env", cfg.Env, "port", cfg.Port)
 
+	// Initialize JWT secret
+	if err := utils.InitJWT(cfg.JWT.Secret); err != nil {
+		logger.Error("Failed to initialize JWT", "error", err)
+		log.Fatal("Failed to initialize JWT:", err)
+	}
+	logger.Info("JWT initialized successfully")
+
 	if err := database.InitDatabase(cfg); err != nil {
 		logger.Error("Failed to initialize database", "error", err)
 		log.Fatal("Failed to initialize database:", err)
@@ -44,8 +52,6 @@ func main() {
 	foodRepo := repository.NewFoodRepository()
 	orderRepo := repository.NewOrderRepository()
 	addressRepo := repository.NewAddressRepository()
-	favoritesRepo := repository.NewFavoritesRepository()
-	notificationRepo := repository.NewNotificationRepository()
 
 	// Initialize services
 	emailService := service.NewEmailService(service.EmailConfig{
@@ -58,26 +64,16 @@ func main() {
 	restaurantService := service.NewRestaurantService(restaurantRepo, foodRepo)
 	foodService := service.NewFoodService(foodRepo)
 	orderService := service.NewOrderService(orderRepo, userRepo, restaurantRepo, foodRepo)
-	paymentService := service.NewPaymentService()
 	addressService := service.NewAddressService(addressRepo, userRepo)
-	favoritesService := service.NewFavoritesService(favoritesRepo, userRepo, foodRepo, restaurantRepo)
-	notificationService := service.NewNotificationService(notificationRepo, userRepo)
-	uploadService := service.NewUploadService()
-
-	// Simple WebSocket service is created in routes (no complex setup needed!)
 
 	deps := &routes.Dependencies{
-		AuthService:         authService,
-		UserService:         userService,
-		RestaurantService:   restaurantService,
-		FoodService:         foodService,
-		OrderService:        orderService,
-		PaymentService:      paymentService,
-		AddressService:      addressService,
-		FavoritesService:    favoritesService,
-		NotificationService: notificationService,
-		UploadService:       uploadService,
-		UserRepository:      userRepo,
+		AuthService:       authService,
+		UserService:       userService,
+		RestaurantService: restaurantService,
+		FoodService:       foodService,
+		OrderService:      orderService,
+		AddressService:    addressService,
+		UserRepository:    userRepo,
 	}
 
 	router := routes.SetupRoutes(deps)

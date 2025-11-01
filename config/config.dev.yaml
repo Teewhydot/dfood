@@ -9,3 +9,5 @@ sendgrid:
   api_key: ${SENDGRID_API_KEY}
   from_email: abubakarissa47722@gmail.com
   from_name: dfood Development
+jwt:
+  secret: ${JWT_SECRET}

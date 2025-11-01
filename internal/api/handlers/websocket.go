@@ -1,22 +1,21 @@
 package handlers
 
 import (
+	"dfood/internal/models"
 	"dfood/internal/service"
+	"dfood/pkg/errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-// WebSocketHandler handles WebSocket connections
-// Like a controller in Flutter - handles the presentation layer
 type WebSocketHandler struct {
-	wsService   *service.WebSocketService // WebSocket service for managing connections
-	userService service.UserService       // User service for validation
+	wsService   *service.WebSocketService
+	userService service.UserService
 }
 
-// NewWebSocketHandler creates a new WebSocket handler
-// Like dependency injection in Flutter
 func NewWebSocketHandler(wsService *service.WebSocketService, userService service.UserService) *WebSocketHandler {
 	return &WebSocketHandler{
 		wsService:   wsService,
@@ -25,54 +24,77 @@ func NewWebSocketHandler(wsService *service.WebSocketService, userService servic
 }
 
 // WebSocket upgrader configuration
-// This converts HTTP requests to WebSocket connections
 var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
 		// Allow all origins for development
-		// In production, you should validate the origin properly
+		// In production, check the origin properly
 		return true
 	},
 }
 
-// WatchUserProfile handles the WebSocket endpoint for user profile updates
+// WatchUserProfile handles WebSocket connections for watching user profile updates
 // Endpoint: GET /api/v1/users/:userId/watch
 func (h *WebSocketHandler) WatchUserProfile(c *gin.Context) {
-	// Extract user ID from URL parameter
 	userID := c.Param("userId")
 
-	// Validate that the user exists before allowing WebSocket connection
-	_, err := h.userService.GetByID(userID)
+	// Verify user exists before upgrading connection
+	user, err := h.userService.GetByID(userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "User not found",
-			"user_id": userID,
-		})
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, err
+			},
+			"verifying user for WebSocket connection",
+		)
+		result.RespondWithJSON(c)
 		return
 	}
 
-	// Upgrade the HTTP connection to WebSocket
+	// Upgrade HTTP connection to WebSocket
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Failed to upgrade to WebSocket",
-			"details": err.Error(),
-		})
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusBadRequest, "Failed to upgrade connection", err)
+			},
+			"upgrading to WebSocket connection",
+		)
+		result.RespondWithJSON(c)
 		return
 	}
 
-	// Handle the WebSocket connection
-	// This call blocks until the connection closes
+	// Send initial profile data immediately after connection
+	initialMessage := models.WSMessage{
+		Type: models.MessageTypeUserUpdate,
+		Data: models.UserUpdateData{
+			User:    user,
+			Changes: map[string]interface{}{"initial": true},
+		},
+		Timestamp: time.Now(),
+	}
+
+	if err := conn.WriteJSON(initialMessage); err != nil {
+		conn.Close()
+		return
+	}
+
+	// Handle the connection (this blocks until connection closes)
+	// The service will manage sending updates when profile changes
 	h.wsService.HandleConnection(userID, conn)
 }
 
 // GetConnectionStats returns WebSocket connection statistics
-// Useful for monitoring how many users are connected
+// Endpoint: GET /api/v1/websocket/stats
 func (h *WebSocketHandler) GetConnectionStats(c *gin.Context) {
-	count := h.wsService.GetConnectionCount()
+	stats := gin.H{
+		"total_connections": h.wsService.GetConnectionCount(),
+		"timestamp":         time.Now(),
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":         true,
-		"connected_users": count,
-		"message":         "WebSocket connection statistics",
+		"success": true,
+		"data":    stats,
 	})
 }

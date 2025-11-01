@@ -12,18 +12,13 @@ import (
 )
 
 type Dependencies struct {
-	AuthService         service.AuthService
-	UserService         service.UserService
-	RestaurantService   service.RestaurantService
-	FoodService         service.FoodService
-	OrderService        service.OrderService
-	PaymentService      service.PaymentService
-	AddressService      service.AddressService
-	FavoritesService    service.FavoritesService
-	NotificationService service.NotificationService
-	UploadService       service.UploadService
-	UserRepository      repository.UserRepository
-	// Note: Simple WebSocket service is created and managed within routes
+	AuthService       service.AuthService
+	UserService       service.UserService
+	RestaurantService service.RestaurantService
+	FoodService       service.FoodService
+	OrderService      service.OrderService
+	AddressService    service.AddressService
+	UserRepository    repository.UserRepository
 }
 
 func SetupRoutes(deps *Dependencies) *gin.Engine {
@@ -37,17 +32,7 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 
 	// Initialize WebSocket Service
 	wsService := service.NewWebSocketService()
-
-	// Set WebSocket service in user service
 	deps.UserService.SetWebSocketService(wsService)
-
-	// Initialize Realtime Service for all WebSocket endpoints
-	realtimeService := service.NewRealtimeService()
-
-	// Set RealtimeService in services that need it
-	deps.AddressService.SetRealtimeService(realtimeService)
-	deps.FavoritesService.SetRealtimeService(realtimeService)
-	deps.NotificationService.SetRealtimeService(realtimeService)
 
 	// Initialize Handlers
 	authHandler := handlers.NewAuthHandler(deps.AuthService)
@@ -55,23 +40,8 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 	restaurantHandler := handlers.NewRestaurantHandler(deps.RestaurantService)
 	foodHandler := handlers.NewFoodHandler(deps.FoodService)
 	orderHandler := handlers.NewOrderHandler(deps.OrderService)
-	paymentHandler := handlers.NewPaymentHandler(deps.PaymentService)
 	addressHandler := handlers.NewAddressHandler(deps.AddressService)
-	favoritesHandler := handlers.NewFavoritesHandler(deps.FavoritesService)
-	notificationHandler := handlers.NewNotificationHandler(deps.NotificationService)
-	uploadHandler := handlers.NewUploadHandler(deps.UploadService)
-
-	// Initialize WebSocket Handler
 	wsHandler := handlers.NewWebSocketHandler(wsService, deps.UserService)
-
-	// Initialize Realtime Handler for all WebSocket endpoints
-	realtimeHandler := handlers.NewRealtimeHandler(
-		realtimeService,
-		deps.UserService,
-		deps.AddressService,
-		deps.FavoritesService,
-		deps.NotificationService,
-	)
 
 	// API v1 Routes
 	v1 := router.Group("/api/v1")
@@ -104,41 +74,11 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			users.GET("/:userId", userHandler.GetProfile)
 			users.PUT("/:userId", userHandler.UpdateProfile)
 			users.PATCH("/:userId/:field", userHandler.UpdateProfileField)
-			users.POST("/:userId/upload-image", userHandler.UploadProfileImage)
 			users.DELETE("/:userId/profile-image", userHandler.DeleteProfileImage)
-			users.GET("/:userId/stream", userHandler.GetProfileStream)
-			users.POST("/:userId/sync-profile", userHandler.SyncProfile)
 
 			// User Addresses
 			users.GET("/:userId/addresses", addressHandler.GetUserAddresses)
 			users.POST("/:userId/addresses", addressHandler.SaveAddress)
-			users.PUT("/:userId/addresses/:addressId", addressHandler.UpdateAddress)
-			users.DELETE("/:userId/addresses/:addressId", addressHandler.DeleteAddress)
-			users.GET("/:userId/addresses/default", addressHandler.GetDefaultAddress)
-			users.PUT("/:userId/addresses/:addressId/set-default", addressHandler.SetDefaultAddress)
-			users.GET("/:userId/addresses/stream", addressHandler.GetAddressStream)
-
-			// Favorites Management
-			users.GET("/:userId/favorites/foods", favoritesHandler.GetFavoriteFoods)
-			users.GET("/:userId/favorites/restaurants", favoritesHandler.GetFavoriteRestaurants)
-			users.POST("/:userId/favorites/foods/:foodId", favoritesHandler.AddFavoriteFood)
-			users.DELETE("/:userId/favorites/foods/:foodId", favoritesHandler.RemoveFavoriteFood)
-			users.POST("/:userId/favorites/restaurants/:restaurantId", favoritesHandler.AddFavoriteRestaurant)
-			users.DELETE("/:userId/favorites/restaurants/:restaurantId", favoritesHandler.RemoveFavoriteRestaurant)
-			users.GET("/:userId/favorites/foods/:foodId/status", favoritesHandler.CheckFoodFavoriteStatus)
-			users.GET("/:userId/favorites/restaurants/:restaurantId/status", favoritesHandler.CheckRestaurantFavoriteStatus)
-			users.POST("/:userId/favorites/foods/:foodId/toggle", favoritesHandler.ToggleFoodFavorite)
-			users.POST("/:userId/favorites/restaurants/:restaurantId/toggle", favoritesHandler.ToggleRestaurantFavorite)
-			users.DELETE("/:userId/favorites", favoritesHandler.ClearAllFavorites)
-			users.GET("/:userId/favorites/stats", favoritesHandler.GetFavoritesStats)
-			users.GET("/:userId/favorites/foods/stream", favoritesHandler.GetFavoriteFoodsStream)
-			users.GET("/:userId/favorites/restaurants/stream", favoritesHandler.GetFavoriteRestaurantsStream)
-
-			// User Notifications
-			users.GET("/:userId/notifications", notificationHandler.GetUserNotifications)
-			users.GET("/:userId/notifications/stream", notificationHandler.GetNotificationsStream)
-			users.POST("/:userId/fcm-token", notificationHandler.UpdateFCMToken)
-			users.GET("/:userId/fcm-token", notificationHandler.GetFCMToken)
 		}
 
 		// 3. Restaurant Endpoints
@@ -180,75 +120,13 @@ func SetupRoutes(deps *Dependencies) *gin.Engine {
 			orders.GET("/:orderId/track", orderHandler.TrackOrder)
 		}
 
-		// 6. Payment Endpoints
-		payments := v1.Group("/payments")
-		{
-			// Payment Methods
-			payments.GET("/methods", paymentHandler.GetPaymentMethods)
-			payments.GET("/cards/:userId", paymentHandler.GetUserCards)
-			payments.POST("/cards", paymentHandler.SaveCard)
-			payments.DELETE("/cards/:cardId", paymentHandler.DeleteCard)
-
-			// Payment Processing
-			payments.POST("/process", paymentHandler.ProcessPayment)
-			payments.GET("/transaction/:transactionId", paymentHandler.GetTransactionDetails)
-			payments.POST("/refund", paymentHandler.ProcessRefund)
-		}
-
-		// 8. Notification Endpoints
-		notifications := v1.Group("/notifications")
-		{
-			// Notification Management
-			notifications.POST("", notificationHandler.SendNotification)
-			notifications.PUT("/:notificationId/read", notificationHandler.MarkNotificationAsRead)
-			notifications.DELETE("/:notificationId", notificationHandler.DeleteNotification)
-		}
-
-		// Push Notifications
-		pushNotifications := v1.Group("/push-notifications")
-		{
-			pushNotifications.POST("/send", notificationHandler.SendPushNotification)
-		}
-
-		// 9. File Upload Endpoints
-		upload := v1.Group("/upload")
-		{
-			// Image Management
-			upload.POST("/profile-image", uploadHandler.UploadProfileImage)
-			upload.POST("/food-image", uploadHandler.UploadFoodImage)
-			upload.POST("/restaurant-image", uploadHandler.UploadRestaurantImage)
-			upload.DELETE("/:imageId", uploadHandler.DeleteImage)
-		}
-
-		// 10. WebSocket Endpoints (Legacy - kept for backward compatibility)
-		// User profile updates endpoint
+		// 6. WebSocket Endpoints
+		// User profile updates (real-time)
 		v1.GET("/users/:userId/watch", wsHandler.WatchUserProfile)
 
-		// WebSocket stats endpoint
+		// WebSocket statistics
 		v1.GET("/websocket/stats", wsHandler.GetConnectionStats)
 
-		// 11. Realtime WebSocket Endpoints (New unified approach)
-		realtime := v1.Group("/realtime")
-		realtime.Use(middleware.AuthMiddleware(deps.UserRepository))
-		{
-			// User profile updates
-			realtime.GET("/users/:userId/watch", realtimeHandler.WatchUserProfile)
-
-			// Address updates
-			realtime.GET("/users/:userId/addresses/watch", realtimeHandler.WatchAddresses)
-
-			// Favorite foods updates
-			realtime.GET("/users/:userId/favorites/foods/watch", realtimeHandler.WatchFavoriteFoods)
-
-			// Favorite restaurants updates
-			realtime.GET("/users/:userId/favorites/restaurants/watch", realtimeHandler.WatchFavoriteRestaurants)
-
-			// Notification updates
-			realtime.GET("/users/:userId/notifications/watch", realtimeHandler.WatchNotifications)
-
-			// Connection statistics
-			realtime.GET("/stats", realtimeHandler.GetConnectionStats)
-		}
 	}
 
 	return router

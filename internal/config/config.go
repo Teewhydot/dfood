@@ -14,6 +14,7 @@ type Config struct {
 	DB       DatabaseConfig `yaml:"db"`
 	LogLevel string         `yaml:"log_level"`
 	SendGrid SendGridConfig `yaml:"sendgrid"`
+	JWT      JWTConfig      `yaml:"jwt"`
 }
 
 type DatabaseConfig struct {
@@ -25,6 +26,10 @@ type SendGridConfig struct {
 	APIKey    string `yaml:"api_key"`
 	FromEmail string `yaml:"from_email"`
 	FromName  string `yaml:"from_name"`
+}
+
+type JWTConfig struct {
+	Secret string `yaml:"secret"`
 }
 
 func New() (*Config, error) {

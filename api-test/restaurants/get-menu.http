@@ -1,0 +1,3 @@
+### Get Restaurant Menu
+GET http://localhost:8080/api/v1/restaurants/restaurant-123/menu?limit=50&offset=0
+Authorization: Bearer {{access_token}}

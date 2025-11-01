@@ -1,0 +1,3 @@
+### Get Foods by Category
+GET http://localhost:8080/api/v1/foods/category/pizza?limit=20&offset=0
+Authorization: Bearer {{access_token}}

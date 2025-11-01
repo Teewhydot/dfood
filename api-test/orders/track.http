@@ -1,0 +1,3 @@
+### Track order
+GET http://localhost:8080/api/v1/orders/order-123/track
+Authorization: Bearer {{access_token}}

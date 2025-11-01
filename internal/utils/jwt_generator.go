@@ -1,12 +1,28 @@
 package utils
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 var jwtKey = []byte("your_secret_key")
+
+// InitJWT initializes the JWT secret key from configuration
+func InitJWT(secret string) error {
+	if secret == "" {
+		return errors.New("JWT secret cannot be empty")
+	}
+	if len(secret) < 16 {
+		return errors.New("JWT secret must be at least 16 characters long for security")
+	}
+	if secret == "your_secret_key" || secret == "your_jwt_secret_key_here" {
+		return errors.New("JWT secret must be changed from default value")
+	}
+	jwtKey = []byte(secret)
+	return nil
+}
 
 // RotateSecretKey changes the JWT secret, invalidating all existing tokens
 func RotateSecretKey(newSecret string) {
@@ -15,7 +31,7 @@ func RotateSecretKey(newSecret string) {
 	tokenBlacklist = make(map[string]bool)
 }
 
-func GenerateJwtToken(email string, isRefresh bool) (string, error) {
+func GenerateJwtToken(userID, email string, isRefresh bool) (string, error) {
 	var expirationTime time.Time
 	if isRefresh {
 		expirationTime = time.Now().Add(7 * 24 * time.Hour)
@@ -24,7 +40,9 @@ func GenerateJwtToken(email string, isRefresh bool) (string, error) {
 	}
 	claims := &jwt.MapClaims{
 		"sub":        email,
+		"user_id":    userID,
 		"exp":        expirationTime.Unix(),
+		"iat":        time.Now().Unix(),
 		"is_refresh": isRefresh,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -37,13 +55,14 @@ func ValidateToken(tokenStr string) (*jwt.MapClaims, error) {
 		return nil, jwt.ErrTokenInvalidClaims
 	}
 
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+	claims := &jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*jwt.MapClaims); ok && token.Valid {
+	if token.Valid {
 		return claims, nil
 	}
 	return nil, jwt.ErrTokenSignatureInvalid
@@ -87,13 +106,14 @@ func InvalidateAllUserTokens(email string) {
 
 // ValidateTokenWithoutBlacklistCheck validates token without checking blacklist
 func ValidateTokenWithoutBlacklistCheck(tokenStr string) (*jwt.MapClaims, error) {
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+	claims := &jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*jwt.MapClaims); ok && token.Valid {
+	if token.Valid {
 		return claims, nil
 	}
 	return nil, jwt.ErrTokenSignatureInvalid

@@ -1,0 +1,20 @@
+### Save New Address
+POST http://localhost:8080/api/v1/users/user-123/addresses
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "id": "addr-123",
+  "user_id": "user-123",
+  "street": "123 Main St",
+  "city": "New York",
+  "state": "NY",
+  "zip_code": "10001",
+  "type": "home",
+  "address": "123 Main St, Apt 4B",
+  "apartment": "Apt 4B",
+  "title": "Home Address",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "is_default": true
+}

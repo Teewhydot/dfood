@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 type UserHandler struct {
@@ -125,11 +124,6 @@ func (h *UserHandler) UpdateProfileField(c *gin.Context) {
 	result.RespondWithJSON(c)
 }
 
-func (h *UserHandler) UploadProfileImage(c *gin.Context) {
-	// TODO: Implement upload profile image (requires file upload service)
-	c.JSON(200, gin.H{"message": "Upload profile image - TODO (requires file upload service)"})
-}
-
 func (h *UserHandler) DeleteProfileImage(c *gin.Context) {
 	userID := c.Param("userId")
 
@@ -146,51 +140,3 @@ func (h *UserHandler) DeleteProfileImage(c *gin.Context) {
 	result.RespondWithJSON(c)
 }
 
-func (h *UserHandler) GetProfileStream(c *gin.Context) {
-	userID := c.Param("userId")
-
-	// Verify user exists
-	_, err := h.userService.GetByID(userID)
-	if err != nil {
-		result := errors.HandleError(
-			func() (interface{}, error) {
-				return nil, err
-			},
-			"verifying user for WebSocket connection",
-		)
-		result.RespondWithJSON(c)
-		return
-	}
-
-	// Upgrade HTTP connection to WebSocket
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true // Configure properly for production
-		},
-	}
-
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		result := errors.HandleError(
-			func() (interface{}, error) {
-				return nil, errors.NewHTTPError(http.StatusBadRequest, "Failed to upgrade connection", err)
-			},
-			"upgrading to WebSocket connection",
-		)
-		result.RespondWithJSON(c)
-		return
-	}
-
-	// Use the new simplified WebSocket endpoint instead
-	conn.Close()
-	c.JSON(http.StatusMovedPermanently, gin.H{
-		"error":        "This endpoint has moved",
-		"new_endpoint": "/api/v1/users/" + userID + "/watch",
-		"message":      "Please use the new WebSocket endpoint",
-	})
-}
-
-func (h *UserHandler) SyncProfile(c *gin.Context) {
-	// TODO: Implement sync local profile changes
-	c.JSON(200, gin.H{"message": "Sync profile - TODO (requires sync logic)"})
-}

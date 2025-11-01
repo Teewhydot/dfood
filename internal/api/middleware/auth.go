@@ -48,6 +48,19 @@ func AuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc {
 			return
 		}
 
+		// Ensure this is not a refresh token
+		if isRefresh, ok := (*claims)["is_refresh"].(bool); ok && isRefresh {
+			result := errors.HandleError(
+				func() (interface{}, error) {
+					return nil, errors.NewHTTPError(http.StatusUnauthorized, "Refresh token cannot be used for authentication", nil)
+				},
+				"validating token type",
+			)
+			result.RespondWithJSON(c)
+			c.Abort()
+			return
+		}
+
 		// Extract user email from token
 		email, ok := (*claims)["sub"].(string)
 		if !ok {
@@ -62,6 +75,20 @@ func AuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc {
 			return
 		}
 
+		// Extract user ID from token
+		tokenUserID, ok := (*claims)["user_id"].(string)
+		if !ok {
+			result := errors.HandleError(
+				func() (interface{}, error) {
+					return nil, errors.NewHTTPError(http.StatusUnauthorized, "Invalid token claims: missing user_id", nil)
+				},
+				"extracting user_id from token",
+			)
+			result.RespondWithJSON(c)
+			c.Abort()
+			return
+		}
+
 		// Fetch user from database to get user ID
 		user, err := userRepo.GetByEmail(email)
 		if err != nil {
@@ -70,6 +97,19 @@ func AuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc {
 					return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not found", err)
 				},
 				"fetching user by email",
+			)
+			result.RespondWithJSON(c)
+			c.Abort()
+			return
+		}
+
+		// Verify token was issued for this specific user
+		if user.ID != tokenUserID {
+			result := errors.HandleError(
+				func() (interface{}, error) {
+					return nil, errors.NewHTTPError(http.StatusUnauthorized, "Token does not belong to this user", nil)
+				},
+				"validating token ownership",
 			)
 			result.RespondWithJSON(c)
 			c.Abort()
@@ -111,16 +151,30 @@ func OptionalAuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc 
 			return
 		}
 
+		// Ensure this is not a refresh token
+		if isRefresh, ok := (*claims)["is_refresh"].(bool); ok && isRefresh {
+			// Refresh token detected, continue without setting user context
+			c.Next()
+			return
+		}
+
 		// Extract user email from token
 		email, ok := (*claims)["sub"].(string)
 		if ok {
-			// Try to fetch user from database to get user ID
-			user, err := userRepo.GetByEmail(email)
-			if err == nil {
-				// Set user context for use in handlers
-				c.Set("user_id", user.ID)
-				c.Set("user_email", email)
-				c.Set("token", token)
+			// Extract user ID from token
+			tokenUserID, ok := (*claims)["user_id"].(string)
+			if ok {
+				// Try to fetch user from database to get user ID
+				user, err := userRepo.GetByEmail(email)
+				if err == nil {
+					// Verify token was issued for this specific user
+					if user.ID == tokenUserID {
+						// Set user context for use in handlers
+						c.Set("user_id", user.ID)
+						c.Set("user_email", email)
+						c.Set("token", token)
+					}
+				}
 			}
 		}
 

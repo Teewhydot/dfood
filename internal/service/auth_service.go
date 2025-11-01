@@ -163,11 +163,11 @@ func (s *authService) Login(email, password string) (*models.User, error) {
 
 	user.Password = ""
 	// Generate JWT token
-	accessToken, err := utils.GenerateJwtToken(user.Email, false)
+	accessToken, err := utils.GenerateJwtToken(user.ID, user.Email, false)
 	if err != nil {
 		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token", err)
 	}
-	refreshToken, err := utils.GenerateJwtToken(user.Email, true)
+	refreshToken, err := utils.GenerateJwtToken(user.ID, user.Email, true)
 	if err != nil {
 		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to generate refresh token", err)
 	}
@@ -271,12 +271,12 @@ func (s *authService) RefreshToken(refreshToken string) (*models.User, error) {
 	}
 
 	// Generate new tokens
-	accessToken, err := utils.GenerateJwtToken(user.Email, false)
+	accessToken, err := utils.GenerateJwtToken(user.ID, user.Email, false)
 	if err != nil {
 		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to generate access token", err)
 	}
 
-	newRefreshToken, err := utils.GenerateJwtToken(user.Email, true)
+	newRefreshToken, err := utils.GenerateJwtToken(user.ID, user.Email, true)
 	if err != nil {
 		return nil, errors.NewHTTPError(http.StatusInternalServerError, "Failed to generate refresh token", err)
 	}
