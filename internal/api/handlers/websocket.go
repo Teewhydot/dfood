@@ -39,6 +39,30 @@ var upgrader = websocket.Upgrader{
 func (h *WebSocketHandler) WatchUserProfile(c *gin.Context) {
 	userID := c.Param("userId")
 
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to watch this user's profile", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
 	// Verify user exists before upgrading connection
 	user, err := h.userService.GetByID(userID)
 	if err != nil {

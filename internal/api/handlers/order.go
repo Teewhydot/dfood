@@ -74,6 +74,31 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 func (h *OrderHandler) GetUserOrders(c *gin.Context) {
 	userID := c.Param("userId")
+
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to access this user's orders", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
 	limitStr := c.DefaultQuery("limit", "20")
 	offsetStr := c.DefaultQuery("offset", "0")
 
@@ -108,12 +133,31 @@ func (h *OrderHandler) GetUserOrders(c *gin.Context) {
 func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 	orderID := c.Param("orderId")
 
+	// Get authenticated user ID
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
 	result := errors.HandleError(
 		func() (interface{}, error) {
 			order, err := h.orderService.GetByID(orderID)
 			if err != nil {
 				return nil, err
 			}
+
+			// Authorization: Verify the order belongs to the authenticated user
+			if order.UserID != authenticatedUserID.(string) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to access this order", nil)
+			}
+
 			return order, nil
 		},
 		"getting order by ID",
@@ -152,9 +196,33 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 func (h *OrderHandler) CancelOrder(c *gin.Context) {
 	orderID := c.Param("orderId")
 
+	// Get authenticated user ID
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
 	result := errors.HandleError(
 		func() (interface{}, error) {
-			err := h.orderService.CancelOrder(orderID)
+			// First, fetch the order to verify ownership
+			order, err := h.orderService.GetByID(orderID)
+			if err != nil {
+				return nil, err
+			}
+
+			// Authorization: Verify the order belongs to the authenticated user
+			if order.UserID != authenticatedUserID.(string) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to cancel this order", nil)
+			}
+
+			err = h.orderService.CancelOrder(orderID)
 			if err != nil {
 				return nil, err
 			}
@@ -168,8 +236,32 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 func (h *OrderHandler) TrackOrder(c *gin.Context) {
 	orderID := c.Param("orderId")
 
+	// Get authenticated user ID
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
 	result := errors.HandleError(
 		func() (interface{}, error) {
+			// First, fetch the order to verify ownership
+			order, err := h.orderService.GetByID(orderID)
+			if err != nil {
+				return nil, err
+			}
+
+			// Authorization: Verify the order belongs to the authenticated user
+			if order.UserID != authenticatedUserID.(string) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to track this order", nil)
+			}
+
 			tracking, err := h.orderService.TrackOrder(orderID)
 			if err != nil {
 				return nil, err

@@ -22,6 +22,30 @@ func NewUserHandler(userService service.UserService) *UserHandler {
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	userID := c.Param("userId")
 
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to access this user's profile", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
 	result := errors.HandleError(
 		func() (interface{}, error) {
 			user, err := h.userService.GetByID(userID)
@@ -39,6 +63,30 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	userID := c.Param("userId")
+
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to update this user's profile", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
 
 	var updateData map[string]interface{}
 	if err := c.ShouldBindJSON(&updateData); err != nil {
@@ -74,6 +122,30 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 func (h *UserHandler) UpdateProfileField(c *gin.Context) {
 	userID := c.Param("userId")
 	field := c.Param("field")
+
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to update this user's profile", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
 
 	var fieldData struct {
 		Value interface{} `json:"value" binding:"required"`
@@ -126,6 +198,30 @@ func (h *UserHandler) UpdateProfileField(c *gin.Context) {
 
 func (h *UserHandler) DeleteProfileImage(c *gin.Context) {
 	userID := c.Param("userId")
+
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to delete this user's profile image", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
 
 	result := errors.HandleError(
 		func() (interface{}, error) {

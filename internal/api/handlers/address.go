@@ -22,22 +22,71 @@ func NewAddressHandler(addressService service.AddressService) *AddressHandler {
 
 // User Addresses
 func (h *AddressHandler) GetUserAddresses(c *gin.Context) {
-	userID := c.Param("userId") // ✅ CORRECT - matches route parameter
+	userID := c.Param("userId")
+
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to access this user's addresses", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
 	result := errors.HandleError(
 		func() (interface{}, error) {
-			addresses, err := h.addressService.GetUserAddresses(userID) // ✅ Better variable name
+			addresses, err := h.addressService.GetUserAddresses(userID)
 			if err != nil {
 				return nil, err
 			}
 			return addresses, nil
 		},
-		"getting user addresses", // ✅ Better error message
+		"getting user addresses",
 	)
 	result.RespondWithJSON(c)
 }
 
 func (h *AddressHandler) SaveAddress(c *gin.Context) {
 	userID := c.Param("userId")
+
+	// Authorization: Verify the authenticated user matches the requested userId
+	authenticatedUserID, exists := c.Get("user_id")
+	if !exists {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusUnauthorized, "User not authenticated", nil)
+			},
+			"getting authenticated user ID",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
+
+	if authenticatedUserID.(string) != userID {
+		result := errors.HandleError(
+			func() (interface{}, error) {
+				return nil, errors.NewHTTPError(http.StatusForbidden, "You are not authorized to save addresses for this user", nil)
+			},
+			"validating user authorization",
+		)
+		result.RespondWithJSON(c)
+		return
+	}
 
 	var address models.Address
 	if err := c.ShouldBindJSON(&address); err != nil {
